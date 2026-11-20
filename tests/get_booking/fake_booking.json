@@ -1,0 +1,28 @@
+[
+    {
+    "id": "CW-1001",
+    "status": "confirmed",
+    "bike_type": "city",
+    "bikes": 1,
+    "start": "2026-06-13T10:00:00+02:00",
+    "end": "2026-06-15T10:00:00+02:00",
+    "add_ons": [],
+    "rental_price_eur": 40.0,
+    "booking_fee_eur": 2.0,
+    "deposit_eur": 50.0,
+    "paid_with": "card"
+  },
+  {
+    "id": "CW-1002",
+    "status": "confirmed",
+    "bike_type": "e-bike",
+    "bikes": 2,
+    "start": "2026-06-11T18:00:00+02:00",
+    "end": "2026-06-12T18:00:00+02:00",
+    "add_ons": [],
+    "rental_price_eur": 80.0,
+    "booking_fee_eur": 2.0,
+    "deposit_eur": 300.0,
+    "paid_with": "card"
+  }
+]

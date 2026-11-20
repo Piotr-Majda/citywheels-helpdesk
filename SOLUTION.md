@@ -1,0 +1,197 @@
+# CityWheels solution and architecture decisions
+
+This document records decisions as the project develops. Planned behavior is
+identified explicitly; it should not be read as implemented functionality.
+
+## Current status
+
+The repository contains the original data, a CLI skeleton, a booking lookup tool,
+and pytest tests and templates. The agent, provider integration, policy search,
+refund calculation, and evaluation are not implemented yet.
+
+## Setup and commands
+
+The project currently requires Python 3.14 or newer and uses uv for dependencies.
+
+```bash
+uv sync --locked
+uv run python -m app.main
+uv run pytest
+```
+
+The CLI currently displays help only. The latest test run has 32 passing tests
+and 10 skipped templates for the other tools. Evaluation commands and provider
+environment variables will be documented when implemented.
+
+## Architecture decision log
+
+### 2026-11-20: Focus on a CLI
+
+**Decision:** Use `app/main.py` as the CLI entry point. Defer FastAPI.
+
+**Reason:** The assignment requires command-line access. Implementing an HTTP API
+now would add an interface that is not needed to meet that requirement.
+
+**Consequence:** Existing FastAPI starter files and dependencies remain for now,
+but the CLI does not use them. Review them before the final submission.
+
+### 2026-11-20: Separate tools from the interface
+
+**Decision:** Keep each tool in its own module under `app/tools/`:
+
+- `get_booking.py`: booking lookup and a clear not-found result.
+- `search_policies.py`: relevant policy text with source references.
+- `calculate_refund.py`: deterministic refund calculation.
+
+**Reason:** Each tool can be developed and tested independently of the CLI or LLM.
+
+**Consequence:** Booking lookup is implemented; policy search and refund tools
+still raise `NotImplementedError`. The agent integration will call these functions
+once implemented.
+
+### 2026-11-20: Inject the booking data source
+
+**Decision:** `get_booking` accepts a keyword-only `booking_loader` callable,
+defaulting to the JSON loader. Unit tests inject fake loaders directly, without
+monkeypatching module globals. Remove the shared global booking cache.
+
+**Reason:** Explicit dependencies keep tests isolated and prevent a fake source
+from hiding problems with the production data. For ten bookings, a cache adds
+unnecessary state and complexity.
+
+**Consequence:** Keep `BookingBase` for shared validation and `BookingRead` for
+read results. The read model prevents field reassignment, but its nested lists
+remain mutable. Fields use the four supplied statuses, timezone-aware datetimes,
+non-negative finite Decimal amounts, positive integer bike counts, and restricted
+bike/payment types. Rental end must be after start. JSON decimal numbers are
+parsed directly as Decimal. Loading errors propagate separately from not-found
+results. The future agent adapter must inject the loader in Python rather than
+expose it as a model-supplied tool argument.
+
+**Evidence:** 32 tests pass across lookup, injected source isolation, field
+validation, and loader behavior. All ten real records were also loaded in a
+separate smoke check. The missing-file, malformed-JSON, failed-load recovery,
+and duplicate-ID tests are implemented using temporary files. Missing files and
+invalid data raise errors rather than returning a not-found result. Duplicate
+IDs now raise an explicit ValueError instead of overwriting earlier entries.
+No booking tests remain skipped.
+
+### 2026-11-20: Use pytest only and group tests by feature
+
+**Decision:** Use pytest as a development dependency and place tests under
+`tests/<feature>/test_<feature>.py`. Configure pytest to discover the `tests/`
+directory.
+
+**Reason:** This follows the requested structure and keeps each tool's behavior
+easy to find. All tests can be run with `uv run pytest`.
+
+**Consequence:** Test templates use explicit pytest skip markers until real
+assertions and implementation are added. Remove the markers as features are built.
+
+### Planned: Pydantic AI with one configurable provider
+
+**Decision:** Use a Pydantic AI agent with one active provider per run. Support
+configuration for OpenAI or Ollama.
+
+**Reason:** Keep tool orchestration in one agent while allowing the model provider
+to change without rewriting tool logic.
+
+**Consequence:** Pydantic AI is not installed or integrated yet. The exact model,
+default provider, configuration variables, and tool-calling compatibility must be
+selected and verified during implementation. No real-provider evaluation has run.
+
+### Planned: Calculate refunds in Python
+
+**Decision:** Use `Decimal` for monetary calculations and the assignment's fixed
+current time: `2026-06-10T09:00:00+02:00` (Europe/Warsaw). The LLM will explain the
+tool's result rather than calculate the amount.
+
+**Reason:** Refund amounts and 24/48-hour boundaries must be reproducible and
+covered by tests.
+
+**Consequence:** Return a breakdown of rental refund, deposit, non-refundable
+booking fee, and applicable rule. Refunding by voucher must not be described as a
+cash refund. The data does not separately identify the deposit payment method, so
+the agent must not invent it. The tool will quote refunds without changing bookings.
+
+### Planned: Start with simple policy retrieval
+
+**Decision:** Search Markdown sections using keyword matching and return their
+source filenames and headings. Start without embeddings or a vector database.
+
+**Reason:** The supplied policy collection is small. A simple implementation is
+easy to inspect and test.
+
+**Consequence:** Paraphrases may be missed. Use evaluation failures to decide
+whether retrieval needs improvement.
+
+## Planned agent behavior
+
+The CLI will send a customer question to the agent. The model will choose tools,
+the application will execute them, and their results will be sent back to the
+model until it produces a final answer. A tool-call limit will bound each run.
+
+Agent instructions will require answers grounded in the supplied policies and
+bookings, prohibit invented booking details and amounts, and direct customers to
+staff when information is missing or a question is outside the shop's scope.
+The final instructions and error handling will be documented once implemented.
+
+## Validation and evaluation
+
+Pytest uses `.pytest_tmp/` under the working directory for temporary test data
+(`--basetemp` in pyproject.toml), avoiding reliance on Windows AppData temporary
+directory permissions. Run tests from the repository root. This directory is
+managed and cleared by pytest and is excluded from Git; do not store project
+files in it. This configuration was added after a user run reported WinError 5
+for all five tests using `tmp_path`, although the assistant's environment passed.
+
+Planned validation includes tool unit tests, every refund rule and time boundary,
+missing bookings, voucher handling, and an agent-loop test using a fake model with
+no network or API key.
+
+The evaluation will contain at least 10 questions, including at least two refund
+questions and two questions the agent should not answer. Its script, automatic
+checks, latest results, and observed failures will be committed when available.
+There is currently no evaluation pass rate to report.
+
+## AI coding assistant usage
+
+Codex helped inspect the supplied files, discuss the design, create the initial
+repository, and write the CLI, tool, and test skeletons and this document.
+
+One output needed revision: the first test templates used Python's `unittest`.
+The user specified pytest only. The templates were converted to pytest, pytest
+was added as a development dependency, and discovery was verified: 12 skipped
+templates. This was a test-framework preference correction, not evidence that the
+tool behavior works.
+
+Add further concrete examples of incorrect output, how it was detected, and the
+correction as development continues. Do not invent examples or evaluation results.
+
+## Limitations and next steps
+
+- Implement the tools and replace skipped templates with meaningful assertions.
+- Install and integrate Pydantic AI; verify the selected provider and model.
+- Add environment configuration and `.env.example` without secrets.
+- Implement the CLI question flow and bounded tool-calling loop.
+- Add a fake-model agent test and run a real-model evaluation.
+- Record failures, fixes, remaining limitations, and exact run commands here.
+- Review unused starter files and dependencies before submission.
+
+With more time, consider conversation memory and a comparison of models or
+retrieval approaches after the required behavior is working and evaluated.
+
+## Template for future decisions
+
+### YYYY-MM-DD: Decision title
+
+**Status:** Planned / implemented / superseded.
+
+**Decision:** What was chosen.
+
+**Reason:** The requirement or observed problem that motivated it, and any
+relevant alternatives.
+
+**Consequence:** Tradeoffs, limitations, and follow-up work.
+
+**Evidence:** Relevant tests or evaluation results, when available.
