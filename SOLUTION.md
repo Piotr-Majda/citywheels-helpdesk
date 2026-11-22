@@ -6,8 +6,8 @@ identified explicitly; it should not be read as implemented functionality.
 ## Current status
 
 The repository contains the original data, a CLI skeleton, booking lookup and
-refund calculation tools, and pytest tests and templates. The agent, provider
-integration, policy search, and evaluation are not implemented yet.
+refund calculation tools, deterministic policy lookup, and pytest tests. The
+agent, provider integration, and evaluation are not implemented yet.
 
 ## Setup and commands
 
@@ -19,8 +19,8 @@ uv run python -m app.main
 uv run pytest
 ```
 
-The CLI currently displays help only. The latest test run has 55 passing tests
-and two skipped policy-search templates. Evaluation commands and provider
+The CLI currently displays help only. The latest test run has 80 passing tests
+and no skipped templates. Evaluation commands and provider
 environment variables will be documented when implemented.
 
 ## Architecture decision log
@@ -32,8 +32,9 @@ environment variables will be documented when implemented.
 **Reason:** The assignment requires command-line access. Implementing an HTTP API
 now would add an interface that is not needed to meet that requirement.
 
-**Consequence:** Existing FastAPI starter files and dependencies remain for now,
-but the CLI does not use them. Review them before the final submission.
+**Consequence:** The unused FastAPI starter files have been removed. The FastAPI
+dependency remains for now, but the CLI does not use it. Review unused dependencies
+before the final submission.
 
 ### 2026-11-20: Separate tools from the interface
 
@@ -45,9 +46,9 @@ but the CLI does not use them. Review them before the final submission.
 
 **Reason:** Each tool can be developed and tested independently of the CLI or LLM.
 
-**Consequence:** Booking lookup and refund calculation are implemented; policy
-search still raises `NotImplementedError`. Booking models live under `app/models/`
-and the injectable JSON loader under `app/db/`.
+**Consequence:** All three required tools are implemented, along with a policy
+topic catalogue tool. Models live under `app/models/` and injectable file loaders
+under `app/db/`. The agent and CLI question flow remain to be implemented.
 
 ### 2026-11-20: Inject the booking data source
 
@@ -134,16 +135,45 @@ one second below each, cancellation at/after start, fixed-time examples, voucher
 refunds, missing bookings, source errors, and timestamp validation. Shared test
 fixtures now distinguish one booking payload from the complete collection.
 
-### Planned: Start with simple policy retrieval
+### 2026-11-22: Use a catalogue and strict policy section lookup
 
-**Decision:** Search Markdown sections using keyword matching and return their
-source filenames and headings. Start without embeddings or a vector database.
+**Decision:** Replace the initial keyword-search proposal with two deterministic
+tools. `list_policy_topics()` lists policy IDs (filename stems) and exact `##`
+headings. `search_policies(policy, topics)` returns selected sections in requested
+order with the document title, source, and introduction. Both accept an injected
+policy loader, keeping tests independent of the real documents.
 
-**Reason:** The supplied policy collection is small. A simple implementation is
-easy to inspect and test.
+**Reason:** The supplied policy collection is small. Explicit topic selection is
+predictable and easy to explain and test. This iteration needs no embeddings,
+similarity ranking, vector database, or retrieval service.
 
-**Consequence:** Paraphrases may be missed. Use evaluation failures to decide
-whether retrieval needs improvement.
+**Consequence:** Policy/topic names are case-sensitive. Unknown policies, unknown
+topics, empty topic lists, and duplicate selections return structured errors with
+valid choices, without partial answers or guessed matches. The loader preserves
+section bodies verbatim, including tables, lists, nested headings, and line
+endings. Introductions preserve context outside sections, such as currency/VAT.
+Duplicate headings and malformed policy structure raise data errors. The parser
+supports the supplied ATX heading format and fenced code blocks; it is not a
+general Markdown parser. Policy IDs select loaded documents, never arbitrary
+user-supplied filesystem paths.
+
+The model must still choose the relevant topic from the catalogue. Deterministic
+retrieval does not guarantee correct topic selection by the model. Evaluate that
+separately with paraphrased questions and questions needing multiple documents.
+
+Example application calls (the future agent adapter will inject dependencies):
+
+```python
+from app.tools import list_policy_topics, search_policies
+
+catalogue = list_policy_topics()
+result = search_policies("prices", ["Bike rental", "Booking fee"])
+```
+
+**Evidence:** 80 tests pass overall, including 25 policy tests covering discovery,
+exact content, source metadata, invalid selections, source isolation, file errors,
+duplicate headings, nested/fenced headings, and LF/CRLF preservation. A separate
+smoke check loaded all three supplied files and retrieved the two example topics.
 
 ## Planned agent behavior
 
@@ -190,7 +220,7 @@ correction as development continues. Do not invent examples or evaluation result
 
 ## Limitations and next steps
 
-- Implement the tools and replace skipped templates with meaningful assertions.
+- Integrate the implemented tools into the agent and evaluate topic selection.
 - Install and integrate Pydantic AI; verify the selected provider and model.
 - Add environment configuration and `.env.example` without secrets.
 - Implement the CLI question flow and bounded tool-calling loop.
