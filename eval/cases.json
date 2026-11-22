@@ -1,0 +1,303 @@
+[
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "opening_hours",
+    "question": "What time are you open on Saturdays in June?",
+    "allowed_tools": [
+      "list_policy_topics",
+      "search_policies"
+    ],
+    "required_calls": [
+      {
+        "tool": "list_policy_topics",
+        "args": {}
+      },
+      {
+        "tool": "search_policies",
+        "args": {
+          "policy": "faq",
+          "topics": [
+            "When are you open?"
+          ]
+        }
+      }
+    ],
+    "allowed_policies": [
+      "faq"
+    ],
+    "answer_patterns": [
+      "\\b(?:08[:.]00|8\\s*(?:am|a\\.m\\.))\\b",
+      "\\b(?:20[:.]00|8\\s*(?:pm|p\\.m\\.))\\b"
+    ]
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "ebike_price",
+    "question": "How much does one e-bike cost for a day, excluding the deposit and booking fee?",
+    "allowed_tools": [
+      "list_policy_topics",
+      "search_policies"
+    ],
+    "required_calls": [
+      {
+        "tool": "list_policy_topics",
+        "args": {}
+      },
+      {
+        "tool": "search_policies",
+        "args": {
+          "policy": "prices",
+          "topics": [
+            "Bike rental"
+          ]
+        }
+      }
+    ],
+    "allowed_policies": [
+      "prices"
+    ],
+    "answer_patterns": [
+      "\\b40(?:[.,]0{1,2})?\\b",
+      "\\b(?:EUR|euros?)\\b|\u20ac"
+    ]
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "age_limit",
+    "question": "Can my 14-year-old rent an electric bike?",
+    "allowed_tools": [
+      "list_policy_topics",
+      "search_policies"
+    ],
+    "required_calls": [
+      {
+        "tool": "list_policy_topics",
+        "args": {}
+      },
+      {
+        "tool": "search_policies",
+        "args": {
+          "policy": "faq",
+          "topics": [
+            "Are there age limits?"
+          ]
+        }
+      }
+    ],
+    "allowed_policies": [
+      "faq"
+    ],
+    "answer_patterns": [
+      "\\b(?:no|cannot|can.t|not (?:allowed|eligible)|too young)\\b",
+      "\\b16\\b"
+    ]
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "booking_details",
+    "question": "For booking CW-1002, how many bikes and what bike type are booked?",
+    "booking_id": "CW-1002",
+    "allowed_tools": [
+      "get_booking"
+    ],
+    "required_calls": [
+      {
+        "tool": "get_booking",
+        "args": {
+          "booking_id": "CW-1002"
+        }
+      }
+    ],
+    "answer_patterns": [
+      "\\b(?:2|two)\\b",
+      "electric|e[- ]?bikes?"
+    ]
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "half_refund",
+    "question": "If I cancel CW-1002 now, how much will I get back in total?",
+    "booking_id": "CW-1002",
+    "allowed_tools": [
+      "get_booking",
+      "calculate_refund",
+      "list_policy_topics",
+      "search_policies"
+    ],
+    "allowed_policies": [
+      "cancellations"
+    ],
+    "required_calls": [
+      {
+        "tool": "calculate_refund",
+        "args": {
+          "booking_id": "CW-1002"
+        }
+      }
+    ],
+    "answer_patterns": [
+      "\\b340(?:[.,]0{1,2})?\\b",
+      "\\b(?:EUR|euros?)\\b|\u20ac"
+    ],
+    "expected_refund": {
+      "refund": "340",
+      "rental_refund": "40",
+      "deposit_refund": "300",
+      "booking_fee_refund": "0",
+      "booking_fee_retained": "2"
+    }
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "deposit_only",
+    "question": "If I cancel CW-1003 now, how much will I get back in total?",
+    "booking_id": "CW-1003",
+    "allowed_tools": [
+      "get_booking",
+      "calculate_refund",
+      "list_policy_topics",
+      "search_policies"
+    ],
+    "allowed_policies": [
+      "cancellations"
+    ],
+    "required_calls": [
+      {
+        "tool": "calculate_refund",
+        "args": {
+          "booking_id": "CW-1003"
+        }
+      }
+    ],
+    "answer_patterns": [
+      "\\b50(?:[.,]0{1,2})?\\b",
+      "\\b(?:EUR|euros?)\\b|\u20ac"
+    ],
+    "expected_refund": {
+      "refund": "50",
+      "rental_refund": "0",
+      "deposit_refund": "50",
+      "booking_fee_refund": "0",
+      "booking_fee_retained": "2"
+    }
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "already_cancelled",
+    "question": "Can I cancel CW-1005 now and receive another cancellation refund?",
+    "booking_id": "CW-1005",
+    "allowed_tools": [
+      "get_booking",
+      "calculate_refund",
+      "list_policy_topics",
+      "search_policies"
+    ],
+    "allowed_policies": [
+      "cancellations"
+    ],
+    "required_calls": [
+      {
+        "tool": "calculate_refund",
+        "args": {
+          "booking_id": "CW-1005"
+        }
+      }
+    ],
+    "answer_patterns": [
+      "cancelled|canceled",
+      "\\b(?:cannot|can.t|no (?:additional |further |new )?refund|not (?:eligible|possible)|nothing)\\b"
+    ],
+    "expected_ineligible": true
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "unknown_booking",
+    "question": "Please show me the details of booking CW-9999.",
+    "booking_id": "CW-9999",
+    "allowed_tools": [
+      "get_booking"
+    ],
+    "required_calls": [
+      {
+        "tool": "get_booking",
+        "args": {
+          "booking_id": "CW-9999"
+        }
+      }
+    ],
+    "answer_patterns": [
+      "not found|could not find|couldn.t find|does not exist|no booking"
+    ],
+    "expected_not_found": true
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "out_of_scope_geography",
+    "question": "What is the capital of Australia?",
+    "allowed_tools": [],
+    "required_calls": [],
+    "answer_patterns": [
+      "CityWheels|bike rental",
+      "help@citywheels\\.example",
+      "cannot|can.t|only|outside|unrelated|not.*(?:scope|related)|not able"
+    ],
+    "forbidden_patterns": [
+      "\\bCanberra\\b"
+    ]
+  },
+  {
+    "max_seconds": 60,
+    "timeout_seconds": 120,
+    "max_requests": 5,
+    "max_tool_calls": 4,
+    "max_repeated_calls": 0,
+    "id": "out_of_scope_recipe",
+    "question": "Give me a detailed pancake recipe.",
+    "allowed_tools": [],
+    "required_calls": [],
+    "answer_patterns": [
+      "CityWheels|bike rental",
+      "help@citywheels\\.example",
+      "cannot|can.t|only|outside|unrelated|not.*(?:scope|related)|not able"
+    ],
+    "forbidden_patterns": [
+      "\\b(?:flour|eggs?|milk|batter)\\b"
+    ]
+  }
+]

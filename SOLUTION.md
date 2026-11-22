@@ -1,247 +1,181 @@
-# CityWheels solution and architecture decisions
+# CityWheels solution — v0.1.0
 
-This document records decisions as the project develops. Planned behavior is
-identified explicitly; it should not be read as implemented functionality.
+This is the current implementation guide. The tagged repository version is
+[`v0.1.0`](https://github.com/Piotr-Majda/citywheels-helpdesk/tree/v0.1.0).
+[INSTALL.md](INSTALL.md) covers a fresh setup; [docs/DECISIONS.md](docs/DECISIONS.md)
+preserves the development history.
 
-## Current status
+## Run
 
-The repository contains the original data, a CLI skeleton, booking lookup and
-refund calculation tools, deterministic policy lookup, and pytest tests. The
-agent, provider integration, and evaluation are not implemented yet.
+Requires Git, uv, Python 3.14+, and Ollama with `llama3.1:8b` installed.
+From the repository root:
 
-## Setup and commands
-
-The project currently requires Python 3.14 or newer and uses uv for dependencies.
-
-```bash
+```powershell
 uv sync --locked
-uv run python -m app.main
-uv run pytest
+uv run --locked python -m app.main --verbose "How much will I get back for CW-1002?"
+uv run --locked pytest
+uv run --locked python -m eval.run --output eval/local-run
 ```
 
-The CLI currently displays help only. The latest test run has 80 passing tests
-and no skipped templates. Evaluation commands and provider
-environment variables will be documented when implemented.
+The default provider is Ollama at `http://localhost:11434/v1`; no API key is needed.
+Environment variables are listed in `.env.example`. They must be exported in the
+terminal; the application does not automatically load `.env` files. To use OpenAI,
+set `LLM_PROVIDER=openai`, `LLM_MODEL` to an available model, and `OPENAI_API_KEY`.
+The OpenAI path is implemented but has not been verified with a live provider call.
 
-## Architecture decision log
+The CLI prints answers to stdout and optional timing/tool diagnostics to stderr.
+It exits nonzero for execution/configuration errors or unverified answers. Evaluation
+exits 1 if any case fails; this is expected for the committed real-model results.
 
-### 2026-11-20: Focus on a CLI
+## Model and framework
 
-**Decision:** Use `app/main.py` as the CLI entry point. Defer FastAPI.
+The evaluated model is local Ollama `llama3.1:8b`. It was already installed, supports
+native tool calls, and makes the solution runnable without paid API credentials.
+The locked Pydantic AI version is 2.71.0. It supplies structured outputs, tool
+argument validation, retry handling, usage accounting, and model-provider adapters.
+Python application code supplies routing checks, execution limits, evidence
+validation, and answer formatting. No vector database, HTTP server, or external
+observability service is required.
 
-**Reason:** The assignment requires command-line access. Implementing an HTTP API
-now would add an interface that is not needed to meet that requirement.
+## Architecture
 
-**Consequence:** The unused FastAPI starter files have been removed. The FastAPI
-dependency remains for now, but the CLI does not use it. Review unused dependencies
-before the final submission.
-
-### 2026-11-20: Separate tools from the interface
-
-**Decision:** Keep each tool in its own module under `app/tools/`:
-
-- `get_booking.py`: booking lookup and a clear not-found result.
-- `search_policies.py`: relevant policy text with source references.
-- `calculate_refund.py`: deterministic refund calculation.
-
-**Reason:** Each tool can be developed and tested independently of the CLI or LLM.
-
-**Consequence:** All three required tools are implemented, along with a policy
-topic catalogue tool. Models live under `app/models/` and injectable file loaders
-under `app/db/`. The agent and CLI question flow remain to be implemented.
-
-### 2026-11-20: Inject the booking data source
-
-**Decision:** `get_booking` accepts a keyword-only `booking_loader` callable,
-defaulting to the JSON loader. Unit tests inject fake loaders directly, without
-monkeypatching module globals. Remove the shared global booking cache.
-
-**Reason:** Explicit dependencies keep tests isolated and prevent a fake source
-from hiding problems with the production data. For ten bookings, a cache adds
-unnecessary state and complexity.
-
-**Consequence:** Keep `BookingBase` for shared validation and `BookingRead` for
-read results. The read model prevents field reassignment, but its nested lists
-remain mutable. Fields use the four supplied statuses, timezone-aware datetimes,
-non-negative finite Decimal amounts, positive integer bike counts, and restricted
-bike/payment types. Rental end must be after start. JSON decimal numbers are
-parsed directly as Decimal. Loading errors propagate separately from not-found
-results. The future agent adapter must inject the loader in Python rather than
-expose it as a model-supplied tool argument.
-
-**Evidence:** 32 tests pass across lookup, injected source isolation, field
-validation, and loader behavior. All ten real records were also loaded in a
-separate smoke check. The missing-file, malformed-JSON, failed-load recovery,
-and duplicate-ID tests are implemented using temporary files. Missing files and
-invalid data raise errors rather than returning a not-found result. Duplicate
-IDs now raise an explicit ValueError instead of overwriting earlier entries.
-No booking tests remain skipped.
-
-### 2026-11-20: Use pytest only and group tests by feature
-
-**Decision:** Use pytest as a development dependency and place tests under
-`tests/<feature>/test_<feature>.py`. Configure pytest to discover the `tests/`
-directory.
-
-**Reason:** This follows the requested structure and keeps each tool's behavior
-easy to find. All tests can be run with `uv run pytest`.
-
-**Consequence:** Test templates use explicit pytest skip markers until real
-assertions and implementation are added. Remove the markers as features are built.
-
-### Planned: Pydantic AI with one configurable provider
-
-**Decision:** Use a Pydantic AI agent with one active provider per run. Support
-configuration for OpenAI or Ollama.
-
-**Reason:** Keep tool orchestration in one agent while allowing the model provider
-to change without rewriting tool logic.
-
-**Consequence:** Pydantic AI is not installed or integrated yet. The exact model,
-default provider, configuration variables, and tool-calling compatibility must be
-selected and verified during implementation. No real-provider evaluation has run.
-
-### 2026-11-22: Calculate refunds in Python
-
-**Decision:** Use `Decimal` for monetary calculations and the assignment's fixed
-current time: `2026-06-10T09:00:00+02:00` (Europe/Warsaw). The LLM will explain the
-tool's result rather than calculate the amount.
-
-**Reason:** Refund amounts and 24/48-hour boundaries must be reproducible and
-covered by tests.
-
-**Consequence:** Return a breakdown of rental refund, deposit, non-refundable
-booking fee, and applicable rule. Refunding by voucher must not be described as a
-cash refund. The data does not separately identify the deposit payment method, so
-the agent must not invent it. The tool will quote refunds without changing bookings.
-
-The tool defaults to the fixed assignment timestamp and accepts an injected
-timezone-aware datetime and booking loader. Elapsed time is calculated in UTC.
-Every status other than `confirmed` returns an ineligible result. Confirmed
-records with a start time already passed follow the zero-rental-refund tier,
-with the deposit returned; the tool does not infer a different booking status.
-This makes the inconsistent-data case explicit without adding an undocumented
-status transition. Invalid time types and naive datetimes raise clear errors.
-
-The result contains the rental and deposit components, retained booking fee,
-applicable tier, and total. `paid_with` identifies the rental payment method;
-the deposit method is described only as its original payment method. No storm
-exception is automatically approved. Monetary arithmetic uses Decimal; a rounding
-rule for hypothetical half-cent refunds remains unspecified by the policy.
-
-**Evidence:** The full suite reports 55 passed and two policy-search templates
-skipped. Tests cover all three ineligible statuses, 24/48-hour boundaries and
-one second below each, cancellation at/after start, fixed-time examples, voucher
-refunds, missing bookings, source errors, and timestamp validation. Shared test
-fixtures now distinguish one booking payload from the complete collection.
-
-### 2026-11-22: Use a catalogue and strict policy section lookup
-
-**Decision:** Replace the initial keyword-search proposal with two deterministic
-tools. `list_policy_topics()` lists policy IDs (filename stems) and exact `##`
-headings. `search_policies(policy, topics)` returns selected sections in requested
-order with the document title, source, and introduction. Both accept an injected
-policy loader, keeping tests independent of the real documents.
-
-**Reason:** The supplied policy collection is small. Explicit topic selection is
-predictable and easy to explain and test. This iteration needs no embeddings,
-similarity ranking, vector database, or retrieval service.
-
-**Consequence:** Policy/topic names are case-sensitive. Unknown policies, unknown
-topics, empty topic lists, and duplicate selections return structured errors with
-valid choices, without partial answers or guessed matches. The loader preserves
-section bodies verbatim, including tables, lists, nested headings, and line
-endings. Introductions preserve context outside sections, such as currency/VAT.
-Duplicate headings and malformed policy structure raise data errors. The parser
-supports the supplied ATX heading format and fenced code blocks; it is not a
-general Markdown parser. Policy IDs select loaded documents, never arbitrary
-user-supplied filesystem paths.
-
-The model must still choose the relevant topic from the catalogue. Deterministic
-retrieval does not guarantee correct topic selection by the model. Evaluate that
-separately with paraphrased questions and questions needing multiple documents.
-
-Example application calls (the future agent adapter will inject dependencies):
-
-```python
-from app.tools import list_policy_topics, search_policies
-
-catalogue = list_policy_topics()
-result = search_policies("prices", ["Bike rental", "Booking fee"])
+```text
+Customer question
+  -> manager: typed scope and plan
+  -> Python: validate selected IDs and tasks
+  -> narrow specialists: execute their permitted tools
+  -> Python: validate actual evidence
+  -> manager: select policy excerpts
+  -> Python: render verified excerpts and structured booking/refund results
 ```
 
-**Evidence:** 80 tests pass overall, including 25 policy tests covering discovery,
-exact content, source metadata, invalid selections, source isolation, file errors,
-duplicate headings, nested/fenced headings, and LF/CRLF preservation. A separate
-smoke check loaded all three supplied files and retrieved the two example topics.
+1. The manager returns scope plus flat `policies`, `bookings`, and `refunds` lists.
+   Plans allow at most four distinct tasks. Booking-ID enums are generated from
+   IDs present in the question; policy IDs are restricted to the three supplied files.
+2. Each specialist uses the same model with a fresh, small context and one allowed
+   native tool. Its successful output is a Python tool result, not generated prose.
+   Pydantic AI output functions enforce this handoff; invalid arguments may retry
+   once. The policy specialist receives exact topic enums after Python executes
+   catalogue discovery. Successful results return to the manager workflow; policy
+   evidence is subsequently provided to the model for extractive synthesis.
+3. Python checks result types and source availability. A policy summary may contain
+   only citations and verbatim quotes present in retrieved text; every requested
+   policy source must be cited. There is no unrestricted policy-answer field.
+4. Booking facts and refund amounts are rendered directly from typed results.
+   Policy excerpts are rendered with their source filename, topics, and document
+   introduction. Unsupported questions receive a fixed refusal and staff contact.
 
-## Planned agent behavior
+These are separate contexts and sequential calls, not recursive delegation.
+Short role instructions live in `app/prompts.py`; routing/assembly is in
+`app/agent.py`, specialist tool interfaces in `app/specialists.py`, and per-question
+state/audit events in `app/context.py`.
 
-The CLI will send a customer question to the agent. The model will choose tools,
-the application will execute them, and their results will be sent back to the
-model until it produces a final answer. A tool-call limit will bound each run.
+All stages share a request/tool budget and deadline. CLI defaults: six model
+requests, eight business-tool executions, 180 seconds. Evaluation: five requests,
+four tool executions, 120-second deadline, and a separate 60-second performance
+target. Replies are capped at 1024 tokens. Provider transport retries are disabled.
+Repeated identical business-tool executions are blocked. Invalid plans, exhausted
+budgets, missing data, or unsupported evidence produce a staff-contact fallback
+and an explicit error state; unchecked partial answers are not emitted.
 
-Agent instructions will require answers grounded in the supplied policies and
-bookings, prohibit invented booking details and amounts, and direct customers to
-staff when information is missing or a question is outside the shop's scope.
-The final instructions and error handling will be documented once implemented.
+## Tools and data decisions
 
-## Validation and evaluation
+| Tool | Implementation and reason |
+| --- | --- |
+| `list_policy_topics` | Generate available policy IDs and exact `##` headings from the documents. |
+| `search_policies` | Retrieve exact selected sections, including tables/lists, introduction, and sources. Strict lookup is predictable for three small files. |
+| `get_booking` | Validate JSON into `BookingRead`; return a booking or structured `not_found`. No shared mutable cache. |
+| `calculate_refund` | Use Python `Decimal`, stored booking prices, booking status, and timezone-aware elapsed time. The LLM does no monetary arithmetic. |
 
-Pytest uses `.pytest_tmp/` under the working directory for temporary test data
-(`--basetemp` in pyproject.toml), avoiding reliance on Windows AppData temporary
-directory permissions. Run tests from the repository root. This directory is
-managed and cleared by pytest and is excluded from Git; do not store project
-files in it. This configuration was added after a user run reported WinError 5
-for all five tests using `tmp_path`, although the assistant's environment passed.
+Loaders and cancellation time are injected explicitly, including in unit tests.
+The fixed assignment time is **2026-06-10 09:00 Europe/Warsaw (UTC+02:00)**.
+Rental refunds are 100% at >=48 hours, 50% at >=24 and <48 hours, and zero below
+24 hours. Confirmed cancellations return the full deposit; booking fees are retained.
+Other statuses cannot be cancelled and receive no new cancellation refund.
+A confirmed record whose start has passed uses the zero-rental-refund tier; the
+tool does not invent a status transition. No booking is changed and no money is sent.
 
-Planned validation includes tool unit tests, every refund rule and time boundary,
-missing bookings, voucher handling, and an agent-loop test using a fake model with
-no network or API key.
+Voucher rental refunds are new vouchers, not cash. The deposit follows its original
+payment method, which the data does not separately identify. Storm exceptions and
+damage/theft decisions require staff. No automatic exception is approved.
 
-The evaluation will contain at least 10 questions, including at least two refund
-questions and two questions the agent should not answer. Its script, automatic
-checks, latest results, and observed failures will be committed when available.
-There is currently no evaluation pass rate to report.
+## Tests, evaluation, and version binding
 
-## AI coding assistant usage
+The offline suite has **118 passing tests**, with no skips. It covers all tools,
+refund rules and boundaries, source failures, model-free workflow tests using
+`FunctionModel`, argument/source guards, shared budgets/timeouts, and the evaluator
+itself. Tests inject fake data and need no Ollama service or API key.
 
-Codex helped inspect the supplied files, discuss the design, create the initial
-repository, and write the CLI, tool, and test skeletons and this document.
+The real-model reports belong to the unchanged application source packaged as
+v0.1.0. [eval/RELEASE.md](eval/RELEASE.md) and [eval/release.json](eval/release.json)
+link recorded run fingerprints to this version. Original run metadata is preserved:
+the runs were recorded from an uncommitted working tree based on an earlier Git
+commit. That base commit is not falsely presented as the evaluated final source.
+Canonical per-file hashes handle Git's line-ending normalization across checkouts.
+[docs/VERIFICATION.md](docs/VERIFICATION.md) records the separate fresh-clone check.
 
-One output needed revision: the first test templates used Python's `unittest`.
-The user specified pytest only. The templates were converted to pytest, pytest
-was added as a development dependency, and discovery was verified: 12 skipped
-templates. This was a test-framework preference correction, not evidence that the
-tool behavior works.
+| Validation | Result | Evidence |
+| --- | --- | --- |
+| Original ten real questions | **8/10** overall | [Report](eval/results.md), [JSON](eval/results.json), [cases](eval/cases.json) |
+| Answer / tool / runtime checks | **9/10 / 9/10 / 10/10** | Same report, with full answers and traces |
+| Five additional development cases | **3/5** | [Report](eval/holdout/results.md), [cases](eval/holdout_cases.json) |
+| Original single-agent baseline | **4/10** | [Before/after comparison](eval/comparison.md) |
 
-Add further concrete examples of incorrect output, how it was detected, and the
-correction as development continues. Do not invent examples or evaluation results.
+Median latency for the final ten-case run was **16.749 seconds**, maximum **31.071
+seconds**. Model requests increased from 17 to 30 compared with the archived
+baseline. These are single observed runs with cache/startup effects, not controlled
+performance claims. All rejected model attempts, actual tool arguments/results,
+stage timings, and guard failures are available in the reports.
+
+The remaining failures are kept in the score:
+
+- The age-limit response quotes the correct minimum age of 16 but lacks the
+  explicit negative wording required by the checker for a 14-year-old.
+- Unknown-booking responses are correct but sometimes trigger unnecessary policy
+  lookups. The fabrication-instruction case also took 60.060 seconds, just above
+  our 60-second target while below the enforced 120-second deadline.
+- The cash-deposit response quotes "cash, but not the deposit", but misses the
+  checker's requested alternative-payment wording and performs an extra lookup.
+
+Run metadata, grading rules, limitations, comparison commands, and historical
+experiments are explained in [eval/README.md](eval/README.md). Local reruns should
+use `--output` so the committed baseline is preserved. Regex checks are useful but
+can reject valid wording or miss semantic mistakes; full answers still need review.
+The additional five cases are now development data, not an unseen benchmark.
+
+## AI-assistant usage and corrections
+
+Codex helped inspect the task data, discuss designs, scaffold the repository,
+implement and review tools/agents/tests, run evaluations, and write documentation.
+The user chose the CLI focus, pytest, dependency injection, strict policy retrieval,
+and manager/specialist architecture; generated changes were checked through tests
+and real local-model runs.
+
+A concrete assistant mistake was accepting a generated policy answer when its
+quotes and numbers matched evidence. A real run retrieved the correct hours but
+said the shop was closed while quoting text saying it was open. The provenance
+check did not validate that paraphrase. We removed the free answer field and now
+render only validated excerpts. Earlier test scaffolding also used `unittest` and
+was corrected to pytest at the user's request. No example or evaluation score was
+invented to claim success.
 
 ## Limitations and next steps
 
-- Integrate the implemented tools into the agent and evaluate topic selection.
-- Install and integrate Pydantic AI; verify the selected provider and model.
-- Add environment configuration and `.env.example` without secrets.
-- Implement the CLI question flow and bounded tool-calling loop.
-- Add a fake-model agent test and run a real-model evaluation.
-- Record failures, fixes, remaining limitations, and exact run commands here.
-- Review unused starter files and dependencies before submission.
+- The model can still misclassify scope, select unnecessary valid tasks/topics,
+  or choose incomplete excerpts. Source membership does not prove relevance or
+  that every condition has been included.
+- Extractive answers are less conversational. Improving paraphrases requires
+  stronger semantic checking, not just longer instructions.
+- Model weights/Ollama behavior can change; use the recorded model/settings and
+  locked dependencies, but do not expect identical wording or timings.
+- OpenAI live execution, other models/operating systems, and broad adversarial
+  coverage have not been validated. Fresh validation reuses the existing Ollama
+  service and package cache; it is not a brand-new-machine benchmark.
+- No conversation memory, production booking authentication, real cancellation,
+  payment integration, or network API is implemented. This is a demo over supplied data.
+- The policy does not specify rounding for hypothetical half-cent refunds.
 
-With more time, consider conversation memory and a comparison of models or
-retrieval approaches after the required behavior is working and evaluated.
-
-## Template for future decisions
-
-### YYYY-MM-DD: Decision title
-
-**Status:** Planned / implemented / superseded.
-
-**Decision:** What was chosen.
-
-**Reason:** The requirement or observed problem that motivated it, and any
-relevant alternatives.
-
-**Consequence:** Tradeoffs, limitations, and follow-up work.
-
-**Evidence:** Relevant tests or evaluation results, when available.
+With more time: improve minimal routing/evidence selection, add fresh paraphrases
+and adversarial cases, compare a smaller tool-capable model under the same checks,
+and add CLI/configuration tests and CI. Keep evaluations honest rather than tuning
+the checker solely to obtain a perfect score.

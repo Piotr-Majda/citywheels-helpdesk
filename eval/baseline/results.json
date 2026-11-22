@@ -1,0 +1,471 @@
+{
+  "metadata": {
+    "started_utc": "2026-11-22T12:54:58.534433+00:00",
+    "provider": "ollama",
+    "model": "llama3.1:8b",
+    "base_url": "http://localhost:11434/v1",
+    "pydantic_ai_version": "2.71.0",
+    "git_commit": "8c8b94be633c050b11c9bc5e1f8a9cd3f6f242d8",
+    "working_tree_dirty": true,
+    "cases_sha256": "fdfde8b172e7d848acba777947d420312159cab975afb187ad6913773ba8451a",
+    "checks_sha256": "82948320a37ab0b3643669a95e5dc5e344956d5b3960617eefd55776d7d194b6",
+    "app_sha256": "a36ddff58ae841983265e7baa71a9530018874a4481decaf19b73d339ba78d90",
+    "case_count": 10,
+    "temperature": 0,
+    "provider_retries": 0,
+    "fixed_now": "2026-06-10T09:00:00+02:00",
+    "limits": {
+      "opening_hours": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "ebike_price": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "age_limit": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "booking_details": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "half_refund": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "deposit_only": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "already_cancelled": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "unknown_booking": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "out_of_scope_geography": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      },
+      "out_of_scope_recipe": {
+        "max_seconds": 60,
+        "timeout_seconds": 120,
+        "max_requests": 5,
+        "max_tool_calls": 4,
+        "max_repeated_calls": 0
+      }
+    },
+    "workflow_regrade_utc": "2026-11-22T13:40:56.349902+00:00",
+    "workflow_regrade_note": "Existing raw outputs/timings regraded with the workflow-aware checker. Legacy runs already expose model tool calls as business calls; rejection-attempt checks are additional when available. No inference rerun."
+  },
+  "passed": 4,
+  "completed": 10,
+  "results": [
+    {
+      "id": "opening_hours",
+      "question": "What time are you open on Saturdays in June?",
+      "answer": "I don't have a function to call that answers your question. The provided functions seem to be related to CityWheels bike rental policies and bookings, but they do not include information about business hours or opening times.\n\nYou may want to try contacting the help desk directly at help@citywheels.example for more general questions like this one.",
+      "error": null,
+      "elapsed_seconds": 58.233,
+      "requests": 1,
+      "tokens": 699,
+      "calls": [],
+      "failures": {
+        "answer": [
+          "Missing required fact/refusal pattern: \\b(?:08[:.]00|8\\s*(?:am|a\\.m\\.))\\b",
+          "Missing required fact/refusal pattern: \\b(?:20[:.]00|8\\s*(?:pm|p\\.m\\.))\\b"
+        ],
+        "tools": [
+          "Missing required call: {'tool': 'list_policy_topics', 'args': {}}",
+          "Missing required call: {'tool': 'search_policies', 'args': {'policy': 'faq', 'topics': ['When are you open?']}}"
+        ],
+        "runtime": []
+      },
+      "passed": false
+    },
+    {
+      "id": "ebike_price",
+      "question": "How much does one e-bike cost for a day, excluding the deposit and booking fee?",
+      "answer": "The policy \"rental_policy.txt\" does not exist. Please check the available policies in the catalogue and use a valid policy ID.\n\nAvailable topics for pricing are: \n\n* Bike rental\n* Add-ons\n* Booking fee\n* Deposit\n* Late return\n\nPlease try again with a valid policy ID.",
+      "error": null,
+      "elapsed_seconds": 14.277,
+      "requests": 2,
+      "tokens": 1306,
+      "calls": [
+        {
+          "tool": "search_policies",
+          "args": {
+            "policy": "rental_policy.txt",
+            "topics": [
+              "pricing"
+            ]
+          },
+          "call_id": "call_27nkkhyc",
+          "result": {
+            "result": "invalid_policy",
+            "message": "Unknown policy: rental_policy.txt",
+            "available": {
+              "cancellations": [
+                "Cancelling a booking",
+                "How the money comes back",
+                "Changing a booking",
+                "Bad weather",
+                "Contact the staff"
+              ],
+              "faq": [
+                "When are you open?",
+                "Where are you?",
+                "What do I need to rent a bike?",
+                "How can I pay?",
+                "Are there age limits?",
+                "Do I have to wear a helmet?",
+                "Can I take my dog?",
+                "Can I take the bike on a train or outside the city?",
+                "What if the bike breaks or I have an accident?",
+                "What if the bike is stolen or lost?",
+                "Do you sell bikes?"
+              ],
+              "prices": [
+                "Bike rental",
+                "Add-ons",
+                "Booking fee",
+                "Deposit",
+                "Late return"
+              ]
+            }
+          },
+          "returned": true,
+          "retry": false
+        }
+      ],
+      "failures": {
+        "answer": [
+          "Missing required fact/refusal pattern: \\b40(?:[.,]0{1,2})?\\b",
+          "Missing required fact/refusal pattern: \\b(?:EUR|euros?)\\b|€"
+        ],
+        "tools": [
+          "Invalid policy/topic arguments: {'policy': 'rental_policy.txt', 'topics': ['pricing']}",
+          "Policy retrieval before catalogue discovery",
+          "Tool error result: invalid_policy",
+          "Missing required call: {'tool': 'list_policy_topics', 'args': {}}",
+          "Missing required call: {'tool': 'search_policies', 'args': {'policy': 'prices', 'topics': ['Bike rental']}}"
+        ],
+        "runtime": []
+      },
+      "passed": false
+    },
+    {
+      "id": "age_limit",
+      "question": "Can my 14-year-old rent an electric bike?",
+      "answer": "The policy \"rental_policy.txt\" does not exist. Please check the available policies in the catalogue and select a valid one.\n\nIf you need help with something else, please let me know!",
+      "error": null,
+      "elapsed_seconds": 17.974,
+      "requests": 2,
+      "tokens": 1273,
+      "calls": [
+        {
+          "tool": "search_policies",
+          "args": {
+            "policy": "rental_policy.txt",
+            "topics": [
+              "youth_rentals"
+            ]
+          },
+          "call_id": "call_k0zs6a9l",
+          "result": {
+            "result": "invalid_policy",
+            "message": "Unknown policy: rental_policy.txt",
+            "available": {
+              "cancellations": [
+                "Cancelling a booking",
+                "How the money comes back",
+                "Changing a booking",
+                "Bad weather",
+                "Contact the staff"
+              ],
+              "faq": [
+                "When are you open?",
+                "Where are you?",
+                "What do I need to rent a bike?",
+                "How can I pay?",
+                "Are there age limits?",
+                "Do I have to wear a helmet?",
+                "Can I take my dog?",
+                "Can I take the bike on a train or outside the city?",
+                "What if the bike breaks or I have an accident?",
+                "What if the bike is stolen or lost?",
+                "Do you sell bikes?"
+              ],
+              "prices": [
+                "Bike rental",
+                "Add-ons",
+                "Booking fee",
+                "Deposit",
+                "Late return"
+              ]
+            }
+          },
+          "returned": true,
+          "retry": false
+        }
+      ],
+      "failures": {
+        "answer": [
+          "Missing required fact/refusal pattern: \\b(?:no|cannot|can.t|not (?:allowed|eligible)|too young)\\b",
+          "Missing required fact/refusal pattern: \\b16\\b"
+        ],
+        "tools": [
+          "Invalid policy/topic arguments: {'policy': 'rental_policy.txt', 'topics': ['youth_rentals']}",
+          "Policy retrieval before catalogue discovery",
+          "Tool error result: invalid_policy",
+          "Missing required call: {'tool': 'list_policy_topics', 'args': {}}",
+          "Missing required call: {'tool': 'search_policies', 'args': {'policy': 'faq', 'topics': ['Are there age limits?']}}"
+        ],
+        "runtime": []
+      },
+      "passed": false
+    },
+    {
+      "id": "booking_details",
+      "question": "For booking CW-1002, how many bikes and what bike type are booked?",
+      "answer": "For booking CW-1002, 2 e-bikes are booked.",
+      "error": null,
+      "elapsed_seconds": 13.307,
+      "requests": 2,
+      "tokens": 1187,
+      "calls": [
+        {
+          "tool": "get_booking",
+          "args": {
+            "booking_id": "CW-1002"
+          },
+          "call_id": "call_fb9xwkqb",
+          "result": {
+            "id": "CW-1002",
+            "status": "confirmed",
+            "bike_type": "e-bike",
+            "bikes": 2,
+            "start": "2026-06-11T18:00:00+02:00",
+            "end": "2026-06-12T18:00:00+02:00",
+            "add_ons": [],
+            "rental_price_eur": "80.0",
+            "booking_fee_eur": "2.0",
+            "deposit_eur": "300.0",
+            "paid_with": "card"
+          },
+          "returned": true,
+          "retry": false
+        }
+      ],
+      "failures": {
+        "answer": [],
+        "tools": [],
+        "runtime": []
+      },
+      "passed": true
+    },
+    {
+      "id": "half_refund",
+      "question": "If I cancel CW-1002 now, how much will I get back in total?",
+      "answer": "You will get a total refund of 340.0, broken down as follows: rental refund 40.0, deposit refund 300.0, and no booking fee refund since the retained booking fee is 2.0. The original payment method was by card.",
+      "error": null,
+      "elapsed_seconds": 16.398,
+      "requests": 2,
+      "tokens": 1194,
+      "calls": [
+        {
+          "tool": "calculate_refund",
+          "args": {
+            "booking_id": "CW-1002"
+          },
+          "call_id": "call_azrogxmp",
+          "result": {
+            "refund": "340.0",
+            "rental_refund": "40.0",
+            "deposit_refund": "300.0",
+            "booking_fee_refund": "0",
+            "booking_fee_retained": "2.0",
+            "rule": "24_to_48_hours",
+            "paid_with": "card",
+            "deposit_refund_method": "original_payment_method"
+          },
+          "returned": true,
+          "retry": false
+        }
+      ],
+      "failures": {
+        "answer": [
+          "Missing required fact/refusal pattern: \\b(?:EUR|euros?)\\b|€"
+        ],
+        "tools": [],
+        "runtime": []
+      },
+      "passed": false
+    },
+    {
+      "id": "deposit_only",
+      "question": "If I cancel CW-1003 now, how much will I get back in total?",
+      "answer": "You will get back 50.0 in total, which is the full rental refund since you cancelled less than 24 hours before pickup. The booking fee of 2.0 has been retained by CityWheels. Your deposit was paid with a card and will be refunded via the same method.",
+      "error": null,
+      "elapsed_seconds": 15.989,
+      "requests": 2,
+      "tokens": 1197,
+      "calls": [
+        {
+          "tool": "calculate_refund",
+          "args": {
+            "booking_id": "CW-1003"
+          },
+          "call_id": "call_bujeddtj",
+          "result": {
+            "refund": "50.0",
+            "rental_refund": "0",
+            "deposit_refund": "50.0",
+            "booking_fee_refund": "0",
+            "booking_fee_retained": "2.0",
+            "rule": "less_than_24_hours",
+            "paid_with": "card",
+            "deposit_refund_method": "original_payment_method"
+          },
+          "returned": true,
+          "retry": false
+        }
+      ],
+      "failures": {
+        "answer": [
+          "Missing required fact/refusal pattern: \\b(?:EUR|euros?)\\b|€",
+          "Deposit-only refund incorrectly described as a full rental refund"
+        ],
+        "tools": [],
+        "runtime": []
+      },
+      "passed": false
+    },
+    {
+      "id": "already_cancelled",
+      "question": "Can I cancel CW-1005 now and receive another cancellation refund?",
+      "answer": "You cannot cancel booking CW-1005 as it is already in a cancelled state. Therefore, you will not receive another cancellation refund.",
+      "error": null,
+      "elapsed_seconds": 15.132,
+      "requests": 2,
+      "tokens": 1151,
+      "calls": [
+        {
+          "tool": "calculate_refund",
+          "args": {
+            "booking_id": "CW-1005"
+          },
+          "call_id": "call_eqx5x1os",
+          "result": {
+            "id": "CW-1005",
+            "message": "Booking CW-1005 with status cancelled cannot be cancelled or refunded"
+          },
+          "returned": true,
+          "retry": false
+        }
+      ],
+      "failures": {
+        "answer": [],
+        "tools": [],
+        "runtime": []
+      },
+      "passed": true
+    },
+    {
+      "id": "unknown_booking",
+      "question": "Please show me the details of booking CW-9999.",
+      "answer": "I'm sorry, but booking CW-9999 was not found.",
+      "error": null,
+      "elapsed_seconds": 11.723,
+      "requests": 2,
+      "tokens": 1100,
+      "calls": [
+        {
+          "tool": "get_booking",
+          "args": {
+            "booking_id": "CW-9999"
+          },
+          "call_id": "call_1owfzge3",
+          "result": {
+            "id": "CW-9999",
+            "result": "not_found",
+            "message": "Booking CW-9999 not found"
+          },
+          "returned": true,
+          "retry": false
+        }
+      ],
+      "failures": {
+        "answer": [],
+        "tools": [],
+        "runtime": []
+      },
+      "passed": true
+    },
+    {
+      "id": "out_of_scope_geography",
+      "question": "What is the capital of Australia?",
+      "answer": "I'm not able to answer questions that are unrelated to CityWheels. The tool capabilities only allow me to provide information about bike rentals, policies, and bookings. For general knowledge or unrelated topics, please contact help@citywheels.example for assistance.\n\nHowever, I can suggest using a search engine or a reliable online resource to find the capital of Australia.",
+      "error": null,
+      "elapsed_seconds": 12.479,
+      "requests": 1,
+      "tokens": 700,
+      "calls": [],
+      "failures": {
+        "answer": [],
+        "tools": [],
+        "runtime": []
+      },
+      "passed": true
+    },
+    {
+      "id": "out_of_scope_recipe",
+      "question": "Give me a detailed pancake recipe.",
+      "answer": "I'm not able to provide information on cooking recipes as I don't have access to external knowledge or tools that can provide such information.\n\nHowever, you may want to try searching online for a detailed pancake recipe or checking out cookbooks from your local library. If you're looking for help with something else related to CityWheels bike rentals, feel free to ask and I'll do my best to assist you!",
+      "error": null,
+      "elapsed_seconds": 7.897,
+      "requests": 1,
+      "tokens": 712,
+      "calls": [],
+      "failures": {
+        "answer": [
+          "Missing required fact/refusal pattern: help@citywheels\\.example"
+        ],
+        "tools": [],
+        "runtime": []
+      },
+      "passed": false
+    }
+  ]
+}

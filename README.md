@@ -1,6 +1,29 @@
-# CityWheels help desk — base data
+# CityWheels help desk — v0.1.0
 
-CityWheels is a made-up bike rental shop. These files hold the data for its help desk agent. There is no code here: you write it.
+**Version:** [v0.1.0](https://github.com/Piotr-Majda/citywheels-helpdesk/tree/v0.1.0)
+· **Offline tests:** 118 passed
+· **Real-model evaluation:** 8/10 plus 3/5 additional cases
+
+CityWheels is a made-up bike rental shop. This repository contains its Python CLI
+help desk agent and the original sample data described below.
+
+## Run the agent, tests, and evaluation
+
+Requires Python 3.14+, uv, and a running Ollama instance with `llama3.1:8b` installed.
+
+```bash
+uv sync --locked
+uv run python -m app.main "How much will I get back for CW-1002?"
+uv run pytest
+uv run python -m eval.run
+```
+
+Start with [INSTALL.md](INSTALL.md) for a fresh clone and setup. See
+[SOLUTION.md](SOLUTION.md) for the current architecture, decisions, and limitations.
+The [release evaluation manifest](eval/RELEASE.md) binds the saved reports to this
+version; [fresh-checkout verification](docs/VERIFICATION.md) records the setup check.
+The [evaluation guide](eval/README.md) explains checks and limits; the
+[latest real-model results](eval/results.md) include answers, tool traces, and timings.
 
 ## Files
 

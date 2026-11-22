@@ -1,0 +1,143 @@
+{
+  "solution_version": "0.1.0",
+  "release_tag": "v0.1.0",
+  "created_utc": "2026-11-22T14:10:32.187971+00:00",
+  "binding_note": "Recorded runs used an uncommitted working tree. Their metadata is unchanged. The recorded app hash matched the source at release preparation. LF-normalized fingerprints bind that source to the tagged checkout across Git line-ending conversion.",
+  "fingerprint_algorithm": "sha256 of concatenated repository-relative UTF-8 path and file bytes, sorted app/**/*.py; canonical fingerprint converts CRLF to LF only",
+  "evaluated_app_raw_sha256": "32c41ccd266299845f2a22ce893fb9d3dbd709593434b489d086b157b884d4ca",
+  "release_app_lf_sha256": "b18217a35e4d70c8ee368ad50595a73ce2450fdf9a655b5169dc7c36f1ccf8a2",
+  "app_files": [
+    {
+      "path": "app/__init__.py",
+      "evaluated_raw_sha256": "b0b636f5ca68e2b289b75377b113fb7646e020ad8833913b3b23d6ecd6b2b42f",
+      "release_lf_sha256": "b0b636f5ca68e2b289b75377b113fb7646e020ad8833913b3b23d6ecd6b2b42f",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/agent.py",
+      "evaluated_raw_sha256": "c3c2f4e56c27bf07c607381ab676784023deae565653d791afabd3315d58ed59",
+      "release_lf_sha256": "35ff09db659eb1ef331ab01585b8247291bbd716e2bea3bbd322d953819293ad",
+      "evaluated_line_endings": "crlf"
+    },
+    {
+      "path": "app/config.py",
+      "evaluated_raw_sha256": "f4c6e570e2673ca94818907b82ed78351f787924fb9e1749746d2a5cce565074",
+      "release_lf_sha256": "f4c6e570e2673ca94818907b82ed78351f787924fb9e1749746d2a5cce565074",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/context.py",
+      "evaluated_raw_sha256": "3ee35fc6b60ef5a84ae6e526d3bf875cf0e51a7099518624e5dae8bcbda42255",
+      "release_lf_sha256": "3ee35fc6b60ef5a84ae6e526d3bf875cf0e51a7099518624e5dae8bcbda42255",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/db/booking_loader.py",
+      "evaluated_raw_sha256": "8e792ad9e072d109ba8934dacbf76860944a7a88c3064813d0e46afd6119f541",
+      "release_lf_sha256": "5ab62c77a2f88d1654b7e9a6392431cda4d0944e9855e8c0a9e04487bcb7362a",
+      "evaluated_line_endings": "crlf"
+    },
+    {
+      "path": "app/db/policy_loader.py",
+      "evaluated_raw_sha256": "fd720e5f50960ae3bbca702c178892eccefecb281c7d2da24be6e53bb9b0fe54",
+      "release_lf_sha256": "fd720e5f50960ae3bbca702c178892eccefecb281c7d2da24be6e53bb9b0fe54",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/main.py",
+      "evaluated_raw_sha256": "9214a2f125c191bbbea378a66c2935efbe049af21aea8d4849197314515400ac",
+      "release_lf_sha256": "9214a2f125c191bbbea378a66c2935efbe049af21aea8d4849197314515400ac",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/models/booking.py",
+      "evaluated_raw_sha256": "b87137598fdc35623053b5f1aa16e650e917d7ece5dd4b4ab51a149d150ffe96",
+      "release_lf_sha256": "61c9e817c6285e2c7b914a4a70696783d092d9e32e03fffe77c30550c041c963",
+      "evaluated_line_endings": "crlf"
+    },
+    {
+      "path": "app/models/policy.py",
+      "evaluated_raw_sha256": "3f19da29f60514866c6251bdd1de2ecc83b91cb929c0c8f3e2224e775db54ee7",
+      "release_lf_sha256": "3f19da29f60514866c6251bdd1de2ecc83b91cb929c0c8f3e2224e775db54ee7",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/models/workflow.py",
+      "evaluated_raw_sha256": "3b0ed386639ffda1b3fe44462f9f8d8a511645f9c5e954a35d87c194812c466d",
+      "release_lf_sha256": "3b0ed386639ffda1b3fe44462f9f8d8a511645f9c5e954a35d87c194812c466d",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/prompts.py",
+      "evaluated_raw_sha256": "02449d20f4b4518b2949e517ffc8d347d6cedb85327234b2c68de6e0ef49f26f",
+      "release_lf_sha256": "02449d20f4b4518b2949e517ffc8d347d6cedb85327234b2c68de6e0ef49f26f",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/specialists.py",
+      "evaluated_raw_sha256": "7a68bd1c3ee95e586d98ea20b7650c9e8061cabb4a59e6be4226b79a5669e6a4",
+      "release_lf_sha256": "7a68bd1c3ee95e586d98ea20b7650c9e8061cabb4a59e6be4226b79a5669e6a4",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/tools/__init__.py",
+      "evaluated_raw_sha256": "a356668833ac3604fd124895609231b554dc86ea63f2fd5938c57f42c14f11d3",
+      "release_lf_sha256": "a356668833ac3604fd124895609231b554dc86ea63f2fd5938c57f42c14f11d3",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/tools/calculate_refund.py",
+      "evaluated_raw_sha256": "90e3efdbaddab05ad1991e207164ed15fa4a9e31e87f5053140c937d51caeb94",
+      "release_lf_sha256": "1e1058d3a629eb345ad398724b7d61a4ad65e1e4ead9222cc84262933e90a17e",
+      "evaluated_line_endings": "crlf"
+    },
+    {
+      "path": "app/tools/get_booking.py",
+      "evaluated_raw_sha256": "69905044f9361b741b265f359074d1770a6cee1c81c2b67aabe8556e951ef751",
+      "release_lf_sha256": "69905044f9361b741b265f359074d1770a6cee1c81c2b67aabe8556e951ef751",
+      "evaluated_line_endings": "lf"
+    },
+    {
+      "path": "app/tools/search_policies.py",
+      "evaluated_raw_sha256": "3671db3810952a709b099785376a46722b29eb9967c528b897cc637acbbff94a",
+      "release_lf_sha256": "3671db3810952a709b099785376a46722b29eb9967c528b897cc637acbbff94a",
+      "evaluated_line_endings": "lf"
+    }
+  ],
+  "checker_lf_sha256": "82948320a37ab0b3643669a95e5dc5e344956d5b3960617eefd55776d7d194b6",
+  "lock_lf_sha256": "66c3d48ae612723074fe5ec30f0f9e295a9d60947f0d5b722752243f24e0c205",
+  "data_files": {
+    "data/bookings.json": "54b7a9d2a287f712a8e94470c3691a3e191e34f16ebb4babb9949dbced370f11",
+    "data/policies/cancellations.md": "419bc40f6372ba08147fbe271f489806faf51502bd28f626c5be4793a9bd5e30",
+    "data/policies/faq.md": "30b4b3e54e8b8adde543439ab3749681fdcb35a88a86061dc071628dc61c1839",
+    "data/policies/prices.md": "097ea7185e9a39f952974b445cbeb0b0eb92cc131ed19c4d3fb13186d67339d1"
+  },
+  "reports": [
+    {
+      "report": "eval/results.json",
+      "report_lf_sha256": "109f574f7db0697b3d510766cbd95dce864ac7154014e8dba59a4e80cb4b79b4",
+      "cases": "eval/cases.json",
+      "cases_lf_sha256": "33d32ea1726dd4c5421becd7401891067b32e9c0892d5fea2f95964168c5389b",
+      "passed": 8,
+      "total": 10,
+      "recorded_git_commit": "8c8b94be633c050b11c9bc5e1f8a9cd3f6f242d8",
+      "recorded_working_tree_dirty": true,
+      "started_utc": "2026-11-22T13:49:56.474249+00:00",
+      "provider": "ollama",
+      "model": "llama3.1:8b"
+    },
+    {
+      "report": "eval/holdout/results.json",
+      "report_lf_sha256": "10e599b308cfbe559e9da01d74362636b7b89085c3af663f744486eccf0b79b8",
+      "cases": "eval/holdout_cases.json",
+      "cases_lf_sha256": "b27a39fdddb44d09d3e216fe3237b17cf8afdcfdee8ed502e887dbc6985f2c42",
+      "passed": 3,
+      "total": 5,
+      "recorded_git_commit": "8c8b94be633c050b11c9bc5e1f8a9cd3f6f242d8",
+      "recorded_working_tree_dirty": true,
+      "started_utc": "2026-11-22T13:53:02.310367+00:00",
+      "provider": "ollama",
+      "model": "llama3.1:8b"
+    }
+  ]
+}

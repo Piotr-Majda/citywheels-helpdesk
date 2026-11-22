@@ -1,12 +1,12 @@
 [project]
 name = "citywheels-helpdesk"
 version = "0.1.0"
-description = "Add your description here"
+description = "CityWheels CLI help desk with validated specialist agents and deterministic tools"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "fastapi>=0.165.0",
     "pydantic>=2.14.3",
+    "pydantic-ai-slim[openai]>=2.71.0",
 ]
 
 [dependency-groups]
