@@ -7,25 +7,10 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from app.tools.get_booking import (
-    BookingBase,
-    BookingNotFound,
-    BookingRead,
-    get_booking,
-    load_booking,
-)
+from app.db.booking_loader import load_booking
+from app.models.booking import BookingBase, BookingNotFound, BookingRead
+from app.tools.get_booking import get_booking
 
-
-@pytest.fixture
-def booking_payload():
-    fixture_path = Path(__file__).with_name("fake_booking.json")
-    return json.loads(fixture_path.read_text(encoding="utf-8"))[0]
-
-
-@pytest.fixture
-def booking_data(booking_payload):
-    booking = BookingRead.model_validate(booking_payload)
-    return {booking.id: booking}
 
 
 def test_existing_booking(booking_data):

@@ -5,9 +5,9 @@ identified explicitly; it should not be read as implemented functionality.
 
 ## Current status
 
-The repository contains the original data, a CLI skeleton, a booking lookup tool,
-and pytest tests and templates. The agent, provider integration, policy search,
-refund calculation, and evaluation are not implemented yet.
+The repository contains the original data, a CLI skeleton, booking lookup and
+refund calculation tools, and pytest tests and templates. The agent, provider
+integration, policy search, and evaluation are not implemented yet.
 
 ## Setup and commands
 
@@ -19,8 +19,8 @@ uv run python -m app.main
 uv run pytest
 ```
 
-The CLI currently displays help only. The latest test run has 32 passing tests
-and 10 skipped templates for the other tools. Evaluation commands and provider
+The CLI currently displays help only. The latest test run has 55 passing tests
+and two skipped policy-search templates. Evaluation commands and provider
 environment variables will be documented when implemented.
 
 ## Architecture decision log
@@ -45,9 +45,9 @@ but the CLI does not use them. Review them before the final submission.
 
 **Reason:** Each tool can be developed and tested independently of the CLI or LLM.
 
-**Consequence:** Booking lookup is implemented; policy search and refund tools
-still raise `NotImplementedError`. The agent integration will call these functions
-once implemented.
+**Consequence:** Booking lookup and refund calculation are implemented; policy
+search still raises `NotImplementedError`. Booking models live under `app/models/`
+and the injectable JSON loader under `app/db/`.
 
 ### 2026-11-20: Inject the booking data source
 
@@ -100,7 +100,7 @@ to change without rewriting tool logic.
 default provider, configuration variables, and tool-calling compatibility must be
 selected and verified during implementation. No real-provider evaluation has run.
 
-### Planned: Calculate refunds in Python
+### 2026-11-22: Calculate refunds in Python
 
 **Decision:** Use `Decimal` for monetary calculations and the assignment's fixed
 current time: `2026-06-10T09:00:00+02:00` (Europe/Warsaw). The LLM will explain the
@@ -113,6 +113,26 @@ covered by tests.
 booking fee, and applicable rule. Refunding by voucher must not be described as a
 cash refund. The data does not separately identify the deposit payment method, so
 the agent must not invent it. The tool will quote refunds without changing bookings.
+
+The tool defaults to the fixed assignment timestamp and accepts an injected
+timezone-aware datetime and booking loader. Elapsed time is calculated in UTC.
+Every status other than `confirmed` returns an ineligible result. Confirmed
+records with a start time already passed follow the zero-rental-refund tier,
+with the deposit returned; the tool does not infer a different booking status.
+This makes the inconsistent-data case explicit without adding an undocumented
+status transition. Invalid time types and naive datetimes raise clear errors.
+
+The result contains the rental and deposit components, retained booking fee,
+applicable tier, and total. `paid_with` identifies the rental payment method;
+the deposit method is described only as its original payment method. No storm
+exception is automatically approved. Monetary arithmetic uses Decimal; a rounding
+rule for hypothetical half-cent refunds remains unspecified by the policy.
+
+**Evidence:** The full suite reports 55 passed and two policy-search templates
+skipped. Tests cover all three ineligible statuses, 24/48-hour boundaries and
+one second below each, cancellation at/after start, fixed-time examples, voucher
+refunds, missing bookings, source errors, and timestamp validation. Shared test
+fixtures now distinguish one booking payload from the complete collection.
 
 ### Planned: Start with simple policy retrieval
 
