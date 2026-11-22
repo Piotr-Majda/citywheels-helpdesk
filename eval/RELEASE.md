@@ -1,7 +1,7 @@
 # Evaluated solution version — v0.1.0
 
 Repository snapshot: [v0.1.0](https://github.com/Piotr-Majda/citywheels-helpdesk/tree/v0.1.0).
-The exact commit is resolved with `git rev-parse v0.1.0^{commit}`. Python project
+The exact commit is resolved with `git rev-parse 'v0.1.0^{commit}'`. Python project
 version: **0.1.0**. Machine-readable binding: [release.json](release.json).
 
 | Report | Result | Model |

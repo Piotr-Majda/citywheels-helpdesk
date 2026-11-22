@@ -139,5 +139,25 @@
       "provider": "ollama",
       "model": "llama3.1:8b"
     }
-  ]
+  ],
+  "fresh_verification": {
+    "source_commit": "89c3ae660b80889ade0a5031d1ff1001d441273d",
+    "app_git_tree": "8525c1ac40b278c026025815994095627a88919d",
+    "record": "docs/VERIFICATION.md",
+    "python": "3.14.0",
+    "uv": "0.9.7",
+    "offline_tests_passed": 118,
+    "offline_tests_skipped": 0,
+    "cli_smoke": {
+      "question": "How much will I get back for CW-1002?",
+      "refund_eur": "340.0",
+      "exit_code": 0,
+      "model_requests": 2,
+      "tool_calls": [
+        "calculate_refund"
+      ],
+      "elapsed_seconds": 44.04
+    },
+    "note": "Independent clone/new virtual environment with locked dependencies; existing package cache and local Ollama service reused. No full evaluation rerun or rewritten historical scores."
+  }
 }
