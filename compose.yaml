@@ -1,0 +1,39 @@
+name: citywheels-helpdesk
+
+x-app: &app
+  build:
+    context: .
+    target: app
+  image: citywheels-helpdesk:local
+  init: true
+  environment:
+    LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+    LLM_MODEL: ${LLM_MODEL:-}
+    OLLAMA_BASE_URL: ${DOCKER_OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  extra_hosts:
+    - host.docker.internal:host-gateway
+
+services:
+  helpdesk:
+    <<: *app
+
+  tests:
+    profiles: [tools]
+    build:
+      context: .
+      target: tests
+    image: citywheels-helpdesk-tests:local
+    init: true
+    network_mode: none
+
+  evaluation:
+    <<: *app
+    profiles: [tools]
+    entrypoint: [python, -m, eval.run]
+    command: [--output, /reports]
+    volumes:
+      - evaluation-reports:/reports
+
+volumes:
+  evaluation-reports:

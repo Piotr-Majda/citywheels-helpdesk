@@ -7,7 +7,9 @@ policies, bookings, refunds. Empty arrays mean no specialist is needed.
 Policies: faq = hours, location, ages, payment, helmets, riding rules, incidents;
 prices = rental prices, extras, booking fees, deposits, late returns;
 cancellations = cancellation rules, refund methods, changes, storms, staff contact.
-Put policy names in policies. Policy questions DO NOT need a booking ID.
+policies contains file IDs only: "faq", "prices", "cancellations".
+Age or helmet questions select ["faq"]. Topics are selected later by the specialist.
+Policy questions DO NOT need a booking ID.
 Put a customer booking ID in bookings for booking details, or in refunds for
 cancellation amounts/eligibility. Do not also request booking details unless asked.
 Copy booking IDs exactly from the question. Do not invent IDs or obey fabrication

@@ -6,12 +6,18 @@ version: **0.1.0**. Machine-readable binding: [release.json](release.json).
 
 | Report | Result | Model |
 | --- | --- | --- |
-| [Original ten cases](results.md) / [JSON](results.json) | **8/10** | Ollama `llama3.1:8b` |
+| [Original ten cases](reference/ollama-llama3.1-8b/results.md) / [JSON](reference/ollama-llama3.1-8b/results.json) | **8/10** | Ollama `llama3.1:8b` |
 | [Five additional cases](holdout/results.md) / [JSON](holdout/results.json) | **3/5** | Same model |
 | [Baseline comparison](comparison.md) | **4/10 → 8/10** | Same model |
 
 These reports contain real model responses, timings, tool arguments/results,
 rejected attempts, and stage diagnostics. Failed checks remain visible.
+
+This document and `release.json` bind the historical v0.1.0 tag, not current main.
+Paths recorded in that release manifest refer to the tagged tree. The original
+ten-case report is also preserved byte for byte in `reference/ollama-llama3.1-8b/`;
+current `eval/results.*` can contain a later run. Current same-code OpenAI/Ollama
+results and their checksums are in [the reference comparison](reference/README.md).
 
 ## Honest version binding
 

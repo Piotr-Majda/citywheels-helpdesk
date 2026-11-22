@@ -1,9 +1,35 @@
-# CityWheels solution — v0.1.0
+# CityWheels solution — current main
+
+Packaging: [DOCKER.md](DOCKER.md) provides pinned non-root
+images, Compose configuration for an online provider, and optional internal
+Ollama/model storage. Docker verification passed 151 offline tests, including
+three new Git-metadata tests. Images omit Git history; evaluation records null
+Git fields and explicit availability rather than a fabricated revision. No
+Docker live-provider evaluation is claimed. The v0.1.0 results remain historical.
 
 This is the current implementation guide. The tagged repository version is
 [`v0.1.0`](https://github.com/Piotr-Majda/citywheels-helpdesk/tree/v0.1.0).
 [INSTALL.md](INSTALL.md) covers a fresh setup; [docs/DECISIONS.md](docs/DECISIONS.md)
 preserves the development history.
+
+Changes since v0.1.0: Pydantic Settings loads the root `.env` automatically,
+with process environment variables taking priority. OpenAI keys use `SecretStr`
+and are passed explicitly to the provider. Policy answers add staff contact only
+when a selected quote calls for staff involvement; unrelated retrieved topics do
+not trigger escalation. The current native offline suite passes **151 tests**.
+Routing requests strict native output and permits one schema-validation retry,
+within the shared request/deadline budget. File IDs are distinguished from topics
+in the prompt. The age-refusal renderer derives a negative conclusion only from
+an unambiguous age question and minimum age in selected electric-bike quotations;
+it does not infer eligibility or remove the quoted conditions.
+
+A targeted OpenAI `gpt-5.4-nano` rerun passed `age_limit` in 4.938 seconds using
+three model requests and both required tool calls. Its separate local report is
+`eval/local-run/age-limit-strict/results.md`. A subsequent complete saved run
+passes **10/10**, with a median of **2.320 seconds** and 21 total model requests.
+The [model reference comparison](eval/reference/README.md) preserves that OpenAI
+run alongside historical Ollama results, including the different application
+fingerprints. Release evaluation results below describe historical v0.1.0.
 
 ## Run
 
@@ -18,10 +44,11 @@ uv run --locked python -m eval.run --output eval/local-run
 ```
 
 The default provider is Ollama at `http://localhost:11434/v1`; no API key is needed.
-Environment variables are listed in `.env.example`. They must be exported in the
-terminal; the application does not automatically load `.env` files. To use OpenAI,
+Environment variables are listed in `.env.example`. Copy it to the root `.env`
+for automatic loading, or export variables in the terminal to override it. To use OpenAI,
 set `LLM_PROVIDER=openai`, `LLM_MODEL` to an available model, and `OPENAI_API_KEY`.
-The OpenAI path is implemented but has not been verified with a live provider call.
+The native OpenAI path was verified with `gpt-5.4-nano`; its ten-case reference
+passes 10/10. Live provider inference through Docker has not been verified.
 
 The CLI prints answers to stdout and optional timing/tool diagnostics to stderr.
 It exits nonzero for execution/configuration errors or unverified answers. Evaluation
@@ -52,6 +79,7 @@ Customer question
 1. The manager returns scope plus flat `policies`, `bookings`, and `refunds` lists.
    Plans allow at most four distinct tasks. Booking-ID enums are generated from
    IDs present in the question; policy IDs are restricted to the three supplied files.
+   Native output explicitly uses strict mode; invalid plans get one validation retry.
 2. Each specialist uses the same model with a fresh, small context and one allowed
    native tool. Its successful output is a Python tool result, not generated prose.
    Pydantic AI output functions enforce this handoff; invalid arguments may retry
@@ -63,7 +91,9 @@ Customer question
    policy source must be cited. There is no unrestricted policy-answer field.
 4. Booking facts and refund amounts are rendered directly from typed results.
    Policy excerpts are rendered with their source filename, topics, and document
-   introduction. Unsupported questions receive a fixed refusal and staff contact.
+   introduction. A narrowly supported electric-bike age refusal can precede the
+   source quote; its age threshold comes from the quote. Unsupported questions
+   receive a fixed refusal and staff contact.
 
 These are separate contexts and sequential calls, not recursive delegation.
 Short role instructions live in `app/prompts.py`; routing/assembly is in
@@ -101,12 +131,14 @@ damage/theft decisions require staff. No automatic exception is approved.
 
 ## Tests, evaluation, and version binding
 
-The offline suite has **118 passing tests**, with no skips. It covers all tools,
+The current offline suite has **151 passing tests**, with no skips. It covers all tools,
 refund rules and boundaries, source failures, model-free workflow tests using
 `FunctionModel`, argument/source guards, shared budgets/timeouts, and the evaluator
 itself. Tests inject fake data and need no Ollama service or API key.
 
-The real-model reports belong to the unchanged application source packaged as
+Current OpenAI and Ollama results use matching application code and are compared
+in [eval/reference/README.md](eval/reference/README.md): 10/10 and 7/10 respectively.
+The historical real-model reports below belong to the application source packaged as
 v0.1.0. [eval/RELEASE.md](eval/RELEASE.md) and [eval/release.json](eval/release.json)
 link recorded run fingerprints to this version. Original run metadata is preserved:
 the runs were recorded from an uncommitted working tree based on an earlier Git
@@ -116,7 +148,7 @@ Canonical per-file hashes handle Git's line-ending normalization across checkout
 
 | Validation | Result | Evidence |
 | --- | --- | --- |
-| Original ten real questions | **8/10** overall | [Report](eval/results.md), [JSON](eval/results.json), [cases](eval/cases.json) |
+| Historical v0.1.0 ten real questions | **8/10** overall | [Report](eval/reference/ollama-llama3.1-8b/results.md), [JSON](eval/reference/ollama-llama3.1-8b/results.json), [cases](eval/cases.json) |
 | Answer / tool / runtime checks | **9/10 / 9/10 / 10/10** | Same report, with full answers and traces |
 | Five additional development cases | **3/5** | [Report](eval/holdout/results.md), [cases](eval/holdout_cases.json) |
 | Original single-agent baseline | **4/10** | [Before/after comparison](eval/comparison.md) |

@@ -1,0 +1,34 @@
+# Optional all-container setup. No host port is published, so native Ollama can
+# keep using localhost:11434. Pull a model explicitly before asking a question.
+services:
+  helpdesk:
+    environment:
+      LLM_PROVIDER: ollama
+      LLM_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      OLLAMA_BASE_URL: http://ollama:11434/v1
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  evaluation:
+    environment:
+      LLM_PROVIDER: ollama
+      LLM_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      OLLAMA_BASE_URL: http://ollama:11434/v1
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  ollama:
+    image: ollama/ollama:0.30.2@sha256:99262b6b2898e1d40907883e316f31e350e0ee6316ccae6127ac5a9feeacade2
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: [CMD, ollama, list]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+volumes:
+  ollama-models:

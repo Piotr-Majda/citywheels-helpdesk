@@ -13,6 +13,7 @@ from app.models.booking import BookingNotFound, BookingRead
 from app.models.policy import PolicyDocument
 from app.models.workflow import PolicySummary, RoutePlan, route_schema
 from app.prompts import MANAGER, SUMMARIZER
+from app.policy_answers import age_refusal
 from app.specialists import MODEL_SETTINGS, SpecialistContext, build_specialist
 from app.tools import list_policy_topics
 from app.tools.calculate_refund import BookingStatusNotConfirmed, CalculateRefundResult
@@ -20,6 +21,16 @@ from app.tools.calculate_refund import BookingStatusNotConfirmed, CalculateRefun
 
 STAFF = "Please contact our staff at help@citywheels.example."
 OUT_OF_SCOPE = "I can only help with CityWheels bike rentals. " + STAFF
+
+
+def policy_needs_staff_contact(quote: str) -> bool:
+    """Escalate only when the rendered source directs a staff action/decision.
+
+    Check the quote, not all retrieved topics: an unused staff-related section
+    must not add escalation to an otherwise complete age/price/hours answer.
+    """
+    text = " ".join(quote.lower().split())
+    return bool(re.search(r"\b(?:staff decide|contact (?:the )?staff|call (?:the )?staff)\b", text))
 
 
 def validate_plan(plan: RoutePlan, question: str) -> None:
@@ -88,7 +99,7 @@ class HelpDeskWorkflow:
         try:
             async with asyncio.timeout(state.timeout):
                 manager = Agent(self.model, name="manager_router", instructions=MANAGER,
-                                output_type=NativeOutput(route_schema(question)), retries=0, model_settings=MODEL_SETTINGS)
+                                output_type=NativeOutput(route_schema(question), strict=True), retries=1, model_settings=MODEL_SETTINGS)
                 plan = await state.run(manager, question, "manager_route")
                 validate_plan(plan, question)
                 if plan.scope == "unsupported":
@@ -145,7 +156,14 @@ class HelpDeskWorkflow:
                             introduction = task_record["result"].get("introduction", "").strip()
                             if introduction and introduction not in introductions:
                                 introductions.append(introduction)
-                    rendered.insert(0, "Policy information:\n" + "\n".join(introductions + references) + "\n" + STAFF)
+                    policy_answer = "Policy information:\n" + "\n".join(introductions + references)
+                    refusal = age_refusal(question, [citation.quote for citation in summary.citations])
+                    if refusal:
+                        policy_answer = refusal + "\n\n" + policy_answer
+                    if (any(policy_needs_staff_contact(citation.quote) for citation in summary.citations)
+                            and "help@citywheels.example" not in policy_answer):
+                        policy_answer += "\n" + STAFF
+                    rendered.insert(0, policy_answer)
                 return WorkflowResult("\n\n".join(rendered), state)
         except Exception as error:
             # Fail closed: no unchecked model answer and no silent partial success.

@@ -1,12 +1,23 @@
-# Fresh installation and execution — v0.1.0
+# Fresh installation and execution — current main
+
+For the container installation path (no host Python/uv), see
+[DOCKER.md](DOCKER.md). It supports an online OpenAI provider and optional
+containerized Ollama.
+
+After cloning current `main`, run `uv sync --locked`, copy `.env.example`
+to `.env`, and edit the provider settings. Pydantic Settings loads this root file
+automatically, even when launched from another directory; process environment
+variables override it. The current offline suite expects **151 passed**.
+The `v0.1.0` tag and its 118-test verification remain historical.
 
 The commands below use Windows PowerShell and run from the repository root.
 The tested interpreter is Python 3.14.0; `.python-version` requests the 3.14 series.
 
 ## 1. Install prerequisites
 
-Install Git, [uv](https://docs.astral.sh/uv/getting-started/installation/), and
-[Ollama for Windows](https://docs.ollama.com/windows). For example, uv is available
+Install Git and [uv](https://docs.astral.sh/uv/getting-started/installation/).
+For the local-model path, also install [Ollama for Windows](https://docs.ollama.com/windows).
+OpenAI requires an API key instead of Ollama. For example, uv is available
 through WinGet:
 
 ```powershell
@@ -21,17 +32,17 @@ uv --version
 ollama --version
 ```
 
-## 2. Clone the marked version and create a new environment
+## 2. Clone main and create a new environment
 
 ```powershell
-git clone --branch v0.1.0 https://github.com/Piotr-Majda/citywheels-helpdesk.git
+git clone --branch main https://github.com/Piotr-Majda/citywheels-helpdesk.git
 cd citywheels-helpdesk
-git describe --tags --exact-match
+git rev-parse HEAD
 uv python install 3.14
 uv sync --locked
 ```
 
-Expected Git version marker: `v0.1.0`. `uv sync --locked` creates `.venv` from
+Record the printed commit when reporting results. `uv sync --locked` creates `.venv` from
 `uv.lock`, including pytest. No activation or pre-existing virtual environment is
 required. Python/package/model downloads require network access during setup.
 The public repository clone needs no GitHub collaborator access.
@@ -42,11 +53,24 @@ The public repository clone needs no GitHub collaborator access.
 uv run --locked pytest
 ```
 
-Release verification expects **118 passed**, no skips. No model, network call,
+Current verification expects **151 passed**, no skips. No model, network call,
 or API key is used by these tests. Pytest manages `.pytest_tmp/` under the working
 directory; do not put project files there. Run from the repository root.
 
-## 4. Start Ollama and obtain the model
+## 4. Choose a provider
+
+For the evaluated OpenAI model, copy `.env.example` to `.env` and set:
+
+```dotenv
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-5.4-nano
+OPENAI_API_KEY=your-key
+```
+
+Then proceed to step 5. Model availability depends on your account. The saved
+ten-case OpenAI reference passes 10/10; running it uses your API credits.
+
+For local Ollama, use the default settings in `.env.example` and obtain the model:
 
 Open the Ollama app. If it is not already serving requests, run `ollama serve` in
 another terminal. Skip that command if the app is already listening on port 11434.
@@ -100,9 +124,8 @@ $env:LLM_MODEL = "your-available-model"
 $env:OPENAI_API_KEY = "your-key"
 ```
 
-The OpenAI path is implemented but not live-tested. Environment variables apply
-to the current terminal session. `.env.example` lists names; copying it to `.env`
-does not automatically configure the application. Never commit a real key.
+The OpenAI path was live-tested with `gpt-5.4-nano`. Environment variables apply
+to the current terminal session and override the root `.env`. Never commit a real key.
 
 ## 7. Run a real evaluation without overwriting recorded results
 
@@ -115,7 +138,9 @@ Expect a few minutes of model execution. Each case has a 120-second enforced
 deadline and a separate 60-second latency target, five-request cap, and four-tool
 cap. Reports are saved incrementally as Markdown and JSON in the selected output
 directory. Exit code 1 means one or more checks failed; it is not automatically
-an installation error. The committed scores are **8/10** and **3/5**, not 100%.
+an installation error. Current ten-case references are **10/10 for OpenAI** and
+**7/10 for Ollama**, on matching application code. See
+[the comparison](eval/reference/README.md) for complete reports and limitations.
 
 [eval/RELEASE.md](eval/RELEASE.md) identifies the version/report binding;
 [eval/README.md](eval/README.md) describes grading and comparison limitations.

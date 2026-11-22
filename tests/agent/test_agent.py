@@ -78,6 +78,7 @@ def test_policy_requires_catalogue_and_real_section_before_summary():
     assert result.error is None
     assert "Online: 2 EUR." in result.output
     assert "data/policies/prices.md" in result.output
+    assert "help@citywheels.example" not in result.output
     assert [call["tool"] for call in result.calls] == ["list_policy_topics", "search_policies"]
     assert result.calls[0]["origin"] == "application"
     assert result.calls[1]["origin"] == "model"
@@ -107,7 +108,7 @@ def test_unsupported_request_never_runs_specialists_or_sources():
 
 
 def test_hallucinated_booking_id_in_plan_is_blocked():
-    result = ask(build_agent(scripted([plan("booking", booking_id="CW-1001")])), "Show CW-9999")
+    result = ask(build_agent(scripted([plan("booking", booking_id="CW-1001")] * 2)), "Show CW-9999")
     assert result.error in {"EvidenceError", "UnexpectedModelBehavior"}
     assert result.calls == []
 
@@ -248,3 +249,79 @@ def test_manager_schema_without_ids_only_allows_policy_or_clarification():
     assert schema.model_validate({"scope": "supported", "policies": ["prices"]}).tasks
     with pytest.raises(ValidationError):
         schema.model_validate({"scope": "supported", "refunds": ["CW-1001"]})
+
+
+def test_age_answer_does_not_escalate_because_unused_staff_topics_were_retrieved():
+    policies = {"faq": parse_policy(
+        "# FAQ\n## Are there age limits?\nElectric bikes: from 16 years old.\n"
+        "## What if the bike is stolen or lost?\nThe staff decide about the deposit.\n",
+        policy="faq", source="data/policies/faq.md",
+    )}
+    model = scripted([
+        plan("policy", policy="faq"),
+        tool("search_policies", policy="faq", topics=["Are there age limits?", "What if the bike is stolen or lost?"]),
+        {"citations": [{"source_id": "policy:faq", "quote": "Electric bikes: from 16 years old."}]},
+    ])
+    result = ask(build_agent(model), "Can my 14-year-old rent an electric bike?",
+                 deps=AgentDependencies(policy_loader=lambda: policies))
+    assert result.error is None
+    assert "16 years old" in result.output
+    assert "No. A 14-year-old cannot rent an electric bike; the minimum age is 16." in result.output
+    assert "help@citywheels.example" not in result.output
+
+
+def test_invalid_route_can_recover_once_before_age_policy_tools_run():
+    policies = {"faq": parse_policy(
+        "# FAQ\n## Are there age limits?\nElectric bikes: from 16 years old.\n",
+        policy="faq", source="data/policies/faq.md",
+    )}
+
+    def corrected_route(messages, info):
+        feedback = [part.content for message in messages for part in message.parts
+                    if isinstance(part, UserPromptPart) and isinstance(part.content, str)]
+        assert any("literal_error" in text and "faq" in text for text in feedback)
+        return ModelResponse(parts=[TextPart(json.dumps(plan("policy", policy="faq")))])
+
+    model = scripted([
+        {"scope": "supported", "policies": ["ages", "helmets"], "bookings": [], "refunds": []},
+        corrected_route,
+        tool("search_policies", policy="faq", topics=["Are there age limits?"]),
+        {"citations": [{"source_id": "policy:faq", "quote": "Electric bikes: from 16 years old."}]},
+    ])
+    result = ask(build_agent(model), "Can my 14-year-old rent an electric bike?",
+                 deps=AgentDependencies(policy_loader=lambda: policies))
+    assert result.error is None
+    assert result.usage.requests == 4
+    assert result.stages[0]["requests"] == 2
+    assert [call["tool"] for call in result.calls] == ["list_policy_topics", "search_policies"]
+    assert result.calls[-1]["args"] == {"policy": "faq", "topics": ["Are there age limits?"]}
+    assert "cannot rent" in result.output and "16" in result.output
+
+
+@pytest.mark.parametrize("request_limit, expected_error, requests", [
+    (6, "UnexpectedModelBehavior", 2),
+    (1, "UsageLimitExceeded", 1),
+])
+def test_invalid_route_retry_is_bounded_by_stage_and_shared_budget(request_limit, expected_error, requests):
+    bad_route = {"scope": "supported", "policies": ["ages"], "bookings": [], "refunds": []}
+    result = ask(build_agent(scripted([bad_route, bad_route])), "What are your age limits?",
+                 request_limit=request_limit)
+    assert result.error == expected_error
+    assert result.usage.requests == requests
+    assert result.calls == []
+
+
+def test_staff_decision_policy_still_provides_contact():
+    policies = {"cancellations": parse_policy(
+        "# Cancellations\n## Bad weather\nThe staff decide each case.\n",
+        policy="cancellations", source="data/policies/cancellations.md",
+    )}
+    model = scripted([
+        plan("policy", policy="cancellations"),
+        tool("search_policies", policy="cancellations", topics=["Bad weather"]),
+        {"citations": [{"source_id": "policy:cancellations", "quote": "The staff decide each case."}]},
+    ])
+    result = ask(build_agent(model), "Can I get a storm exception?",
+                 deps=AgentDependencies(policy_loader=lambda: policies))
+    assert result.error is None
+    assert "help@citywheels.example" in result.output

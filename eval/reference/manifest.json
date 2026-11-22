@@ -1,0 +1,328 @@
+{
+  "note": "Original reports preserved byte for byte. The current Ollama and OpenAI snapshots have matching app, cases, checker, and limits. The original Ollama release snapshot is retained separately as historical evidence.",
+  "snapshots": [
+    {
+      "directory": "openai-gpt-5.4-nano",
+      "provider": "openai",
+      "model": "gpt-5.4-nano",
+      "metadata": {
+        "started_utc": "2026-11-22T22:43:16.329772+00:00",
+        "provider": "openai",
+        "model": "gpt-5.4-nano",
+        "base_url": "provider default",
+        "pydantic_ai_version": "2.71.0",
+        "git_commit": "64b964cdf0199a96a53a1e786f9487b6b7f91a09",
+        "working_tree_dirty": true,
+        "git_metadata_available": true,
+        "cases_sha256": "fdfde8b172e7d848acba777947d420312159cab975afb187ad6913773ba8451a",
+        "checks_sha256": "82948320a37ab0b3643669a95e5dc5e344956d5b3960617eefd55776d7d194b6",
+        "app_sha256": "d6d94227f99bbddc41d173c361805eeb0f38608c3e51109bae55eeefec310ebc",
+        "case_count": 10,
+        "temperature": 0,
+        "provider_retries": 0,
+        "architecture": "manager-specialists-v1",
+        "max_output_tokens_per_request": 1024,
+        "fixed_now": "2026-06-10T09:00:00+02:00",
+        "limits": {
+          "opening_hours": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "ebike_price": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "age_limit": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "booking_details": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "half_refund": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "deposit_only": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "already_cancelled": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "unknown_booking": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "out_of_scope_geography": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "out_of_scope_recipe": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          }
+        }
+      },
+      "files_sha256": {
+        "results.json": "a7c308417d209941b377884fbf17cb8498fd13ac8f8e9562d34019f30f8d0e99",
+        "results.md": "f6d01e0d1e594e5be517d2ffe3c1f4851543cf545e4081c9374bee74b56234c9"
+      }
+    },
+    {
+      "directory": "ollama-llama3.1-8b",
+      "provider": "ollama",
+      "model": "llama3.1:8b",
+      "metadata": {
+        "started_utc": "2026-11-22T13:49:56.474249+00:00",
+        "provider": "ollama",
+        "model": "llama3.1:8b",
+        "base_url": "http://localhost:11434/v1",
+        "pydantic_ai_version": "2.71.0",
+        "git_commit": "8c8b94be633c050b11c9bc5e1f8a9cd3f6f242d8",
+        "working_tree_dirty": true,
+        "cases_sha256": "fdfde8b172e7d848acba777947d420312159cab975afb187ad6913773ba8451a",
+        "checks_sha256": "82948320a37ab0b3643669a95e5dc5e344956d5b3960617eefd55776d7d194b6",
+        "app_sha256": "32c41ccd266299845f2a22ce893fb9d3dbd709593434b489d086b157b884d4ca",
+        "case_count": 10,
+        "temperature": 0,
+        "provider_retries": 0,
+        "architecture": "manager-specialists-v1",
+        "max_output_tokens_per_request": 1024,
+        "fixed_now": "2026-06-10T09:00:00+02:00",
+        "limits": {
+          "opening_hours": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "ebike_price": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "age_limit": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "booking_details": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "half_refund": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "deposit_only": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "already_cancelled": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "unknown_booking": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "out_of_scope_geography": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "out_of_scope_recipe": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          }
+        }
+      },
+      "files_sha256": {
+        "results.json": "109f574f7db0697b3d510766cbd95dce864ac7154014e8dba59a4e80cb4b79b4",
+        "results.md": "d7e84ce0a47fd3b6093d16ac0d8ec547e0e9a00df55e1f7a65760666529fc202"
+      }
+    },
+    {
+      "directory": "ollama-llama3.1-8b-current",
+      "provider": "ollama",
+      "model": "llama3.1:8b",
+      "metadata": {
+        "started_utc": "2026-11-22T22:48:40.864943+00:00",
+        "provider": "ollama",
+        "model": "llama3.1:8b",
+        "base_url": "http://localhost:11434/v1",
+        "pydantic_ai_version": "2.71.0",
+        "git_commit": "64b964cdf0199a96a53a1e786f9487b6b7f91a09",
+        "working_tree_dirty": true,
+        "git_metadata_available": true,
+        "cases_sha256": "fdfde8b172e7d848acba777947d420312159cab975afb187ad6913773ba8451a",
+        "checks_sha256": "82948320a37ab0b3643669a95e5dc5e344956d5b3960617eefd55776d7d194b6",
+        "app_sha256": "d6d94227f99bbddc41d173c361805eeb0f38608c3e51109bae55eeefec310ebc",
+        "case_count": 10,
+        "temperature": 0,
+        "provider_retries": 0,
+        "architecture": "manager-specialists-v1",
+        "max_output_tokens_per_request": 1024,
+        "fixed_now": "2026-06-10T09:00:00+02:00",
+        "limits": {
+          "opening_hours": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "ebike_price": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "age_limit": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "booking_details": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "half_refund": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "deposit_only": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "already_cancelled": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "unknown_booking": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "out_of_scope_geography": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          },
+          "out_of_scope_recipe": {
+            "max_seconds": 60,
+            "timeout_seconds": 120,
+            "max_requests": 5,
+            "max_tool_calls": 4,
+            "max_repeated_calls": 0
+          }
+        }
+      },
+      "files_sha256": {
+        "results.json": "59fadc22f56c5ad31f95304c96c6c5d4d9f0de9ed1dd066869d4f4b7e8649d97",
+        "results.md": "d7bec71713ef8f27a04f12f8dcb8116c44fd0afaf3a447549cd8ce0186a4add7"
+      }
+    }
+  ],
+  "current_source_binding": {
+    "note": "Current OpenAI and Ollama reports were evaluated before commit. Original metadata is unchanged. Canonical hashes normalize CRLF to LF to verify the published application across platforms.",
+    "evaluated_app_raw_sha256": "d6d94227f99bbddc41d173c361805eeb0f38608c3e51109bae55eeefec310ebc",
+    "published_app_lf_sha256": "77e1883ce1c11a55200507cd2579192d5c66877c0e2f4fd9f48bfc30c65bde4a",
+    "files_lf_sha256": {
+      "app/__init__.py": "b0b636f5ca68e2b289b75377b113fb7646e020ad8833913b3b23d6ecd6b2b42f",
+      "app/agent.py": "85a021d63bc5281ca3a81fea1bb108b42e8e1f2bdb838dc6f99d26bff9b19e60",
+      "app/config.py": "2d2b0d86ef0b364ca538da3c667fc36b09ead31e54fc6263876816e503011e07",
+      "app/context.py": "3ee35fc6b60ef5a84ae6e526d3bf875cf0e51a7099518624e5dae8bcbda42255",
+      "app/db/booking_loader.py": "5ab62c77a2f88d1654b7e9a6392431cda4d0944e9855e8c0a9e04487bcb7362a",
+      "app/db/policy_loader.py": "fd720e5f50960ae3bbca702c178892eccefecb281c7d2da24be6e53bb9b0fe54",
+      "app/main.py": "9214a2f125c191bbbea378a66c2935efbe049af21aea8d4849197314515400ac",
+      "app/models/booking.py": "61c9e817c6285e2c7b914a4a70696783d092d9e32e03fffe77c30550c041c963",
+      "app/models/policy.py": "3f19da29f60514866c6251bdd1de2ecc83b91cb929c0c8f3e2224e775db54ee7",
+      "app/models/workflow.py": "3b0ed386639ffda1b3fe44462f9f8d8a511645f9c5e954a35d87c194812c466d",
+      "app/policy_answers.py": "ad904e02982f7ec29e203c11d187f0d059eb1a564aa4c553121b4a6f55eb7d0d",
+      "app/prompts.py": "96081baf8f227566ed1c6f8210b91e0e53d15ded639d6aed4a00236cc27641fc",
+      "app/specialists.py": "7a68bd1c3ee95e586d98ea20b7650c9e8061cabb4a59e6be4226b79a5669e6a4",
+      "app/tools/__init__.py": "a356668833ac3604fd124895609231b554dc86ea63f2fd5938c57f42c14f11d3",
+      "app/tools/calculate_refund.py": "1e1058d3a629eb345ad398724b7d61a4ad65e1e4ead9222cc84262933e90a17e",
+      "app/tools/get_booking.py": "69905044f9361b741b265f359074d1770a6cee1c81c2b67aabe8556e951ef751",
+      "app/tools/search_policies.py": "3671db3810952a709b099785376a46722b29eb9967c528b897cc637acbbff94a"
+    }
+  }
+}

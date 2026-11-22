@@ -8,3 +8,4 @@ __pycache__/
 !.env.example
 /eval/local-run/
 /eval/local-holdout/
+/eval/docker-results/

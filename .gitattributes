@@ -5,5 +5,11 @@
 *.toml text eol=lf
 *.lock text eol=lf
 *.txt text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
 .env.example text eol=lf
 .python-version text eol=lf
+# Reference report checksums cover original bytes, including line endings.
+/eval/reference/**/results.json -text
+/eval/reference/**/results.md -text

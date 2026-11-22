@@ -24,6 +24,16 @@ from eval.checks import validate
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def source_metadata(*, command=subprocess.check_output):
+    """A packaged image has no Git executable/history; never invent a revision."""
+    try:
+        commit = command(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+        dirty = bool(command(["git", "status", "--porcelain"], cwd=ROOT, text=True, stderr=subprocess.DEVNULL))
+        return {"git_commit": commit, "working_tree_dirty": dirty, "git_metadata_available": True}
+    except (OSError, subprocess.CalledProcessError):
+        return {"git_commit": None, "working_tree_dirty": None, "git_metadata_available": False}
+
+
 def extract_calls(messages):
     calls = []
     for message in messages:
@@ -124,8 +134,7 @@ def main():
         "provider": settings.provider, "model": settings.model,
         "base_url": settings.ollama_base_url if settings.provider == "ollama" else "provider default",
         "pydantic_ai_version": version("pydantic-ai-slim"),
-        "git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-        "working_tree_dirty": bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True)),
+        **source_metadata(),
         "cases_sha256": hashlib.sha256(cases_bytes).hexdigest(),
         "checks_sha256": hashlib.sha256((ROOT / "eval/checks.py").read_bytes()).hexdigest(),
         "app_sha256": hashlib.sha256(b"".join(file.relative_to(ROOT).as_posix().encode() + file.read_bytes()

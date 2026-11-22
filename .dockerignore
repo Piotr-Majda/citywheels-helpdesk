@@ -1,0 +1,24 @@
+# Allow only the files used by explicit Dockerfile COPY commands.
+**
+!Dockerfile
+!pyproject.toml
+!uv.lock
+!.python-version
+!README.md
+!app/
+!app/**
+!data/
+!data/**
+!eval/
+!eval/__init__.py
+!eval/run.py
+!eval/checks.py
+!eval/cases.json
+!eval/holdout_cases.json
+!tests/
+!tests/**
+**/__pycache__/
+**/*.py[cod]
+**/.env*
+**/*.pem
+**/*.key

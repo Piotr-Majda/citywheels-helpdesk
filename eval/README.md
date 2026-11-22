@@ -3,7 +3,7 @@
 Run from the repository root with Ollama running and the configured model installed:
 
 ```powershell
-uv run python -m eval.run
+uv run python -m eval.run --output eval/local-run/current
 ```
 
 The default provider/model are Ollama and `llama3.1:8b`. To compare another installed
@@ -16,8 +16,12 @@ uv run python -m eval.run --output eval/comparison
 
 The initial prompt's ten-case results are preserved under `eval/baseline/`.
 The longer-prompt experiment is archived under `eval/long_prompt/`, including its
-additional-case results. `eval/results.*` holds the latest run on the unchanged
-ten-case suite. Current short role prompts live in `app/prompts.py`; the original
+additional-case results. `eval/results.*` holds the latest run and may be overwritten.
+The [model reference comparison](reference/README.md) contains separate
+OpenAI (10/10) and current Ollama (7/10) snapshots with matching application,
+cases, checks, and limits. The historical Ollama release (8/10) remains separate.
+Machine-readable comparison checks and report checksums are included. Save future
+runs to separate output directories. Current short role prompts live in `app/prompts.py`; the original
 agent source is archived as `eval/baseline/agent_before.py.txt` for comparison.
 
 The current architecture routes to narrow specialists. Catalogue discovery is
@@ -31,7 +35,7 @@ The checker now also marks rejected/unexecuted model attempts as tool failures.
 Saved baseline outputs were regraded without new inference; scores did not change.
 Metadata records that regrading, allowing comparison using matching checker hashes.
 
-The final manager/specialist run scored 8/10 on the original cases and 3/5 on the
+The v0.1.0 manager/specialist run scored 8/10 on the original cases and 3/5 on the
 additional cases. All original runtime checks passed. Policy output is now an
 extractive summary, not an unrestricted paraphrase. Some correct excerpts fail
 strict wording checks (for example, quoting a minimum age rather than explicitly
