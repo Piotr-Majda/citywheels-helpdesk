@@ -1,213 +1,290 @@
-# CityWheels solution — current main
+# CityWheels: decisions and development evidence
 
-Packaging: [DOCKER.md](DOCKER.md) provides pinned non-root
-images, Compose configuration for an online provider, and optional internal
-Ollama/model storage. Docker verification passed 151 offline tests, including
-three new Git-metadata tests. Images omit Git history; evaluation records null
-Git fields and explicit availability rather than a fabricated revision. No
-Docker live-provider evaluation is claimed. The v0.1.0 results remain historical.
+This document explains the decisions, their development stage, rationale, and
+observed consequences. [README.md](README.md) contains setup and use. The evaluated
+models are **OpenAI `gpt-5.4-nano`** and **Ollama `llama3.1:8b`**. Both run the same
+workflow and business tools; provider selection is configuration.
 
-This is the current implementation guide. The tagged repository version is
-[`v0.1.0`](https://github.com/Piotr-Majda/citywheels-helpdesk/tree/v0.1.0).
-[INSTALL.md](INSTALL.md) covers a fresh setup; [docs/DECISIONS.md](docs/DECISIONS.md)
-preserves the development history.
+## Stage 1 — CLI scope and testable tools (20 November 2026)
 
-Changes since v0.1.0: Pydantic Settings loads the root `.env` automatically,
-with process environment variables taking priority. OpenAI keys use `SecretStr`
-and are passed explicitly to the provider. Policy answers add staff contact only
-when a selected quote calls for staff involvement; unrelated retrieved topics do
-not trigger escalation. The current native offline suite passes **151 tests**.
-Routing requests strict native output and permits one schema-validation retry,
-within the shared request/deadline budget. File IDs are distinguished from topics
-in the prompt. The age-refusal renderer derives a negative conclusion only from
-an unambiguous age question and minimum age in selected electric-bike quotations;
-it does not infer eligibility or remove the quoted conditions.
+**Decision:** implement `app/main.py` as a CLI, defer FastAPI, and place each tool
+in its own `app/tools/` module. Use pytest only, grouped by feature.
 
-A targeted OpenAI `gpt-5.4-nano` rerun passed `age_limit` in 4.938 seconds using
-three model requests and both required tool calls. Its separate local report is
-`eval/local-run/age-limit-strict/results.md`. A subsequent complete saved run
-passes **10/10**, with a median of **2.320 seconds** and 21 total model requests.
-The [model reference comparison](eval/reference/README.md) preserves that OpenAI
-run alongside historical Ollama results, including the different application
-fingerprints. Release evaluation results below describe historical v0.1.0.
+**Reason:** the CLI meets the assignment interface requirement. An HTTP server
+adds deployment concerns without improving the core task. Independent tools can
+be reviewed and tested before introducing a model. The final source/dependencies
+remove FastAPI and the unused greeting starter.
 
-## Run
+**Decision:** explicitly inject booking/policy loaders and the cancellation clock;
+use `BookingBase` for shared validation and `BookingRead` for results; remove the
+global booking cache.
 
-Requires Git, uv, Python 3.14+, and Ollama with `llama3.1:8b` installed.
-From the repository root:
+**Reason:** tests can supply isolated fake data without monkeypatching globals.
+For ten supplied bookings a cache adds state with little benefit. Validation
+distinguishes unknown bookings from broken source data. Duplicate IDs fail instead
+of overwriting records. Statuses match the supplied data; dates are timezone-aware
+and money uses Decimal. Read-model fields cannot be reassigned, although nested
+lists remain mutable.
 
-```powershell
-uv sync --locked
-uv run --locked python -m app.main --verbose "How much will I get back for CW-1002?"
-uv run --locked pytest
-uv run --locked python -m eval.run --output eval/local-run
-```
+**Evidence:** loader/tool tests cover missing files, malformed JSON, duplicate IDs,
+failed-load recovery, dependency isolation, and invalid booking fields. The Windows
+temporary-directory problem was addressed with project-local pytest temporary
+storage. No feature-template tests remain skipped.
 
-The default provider is Ollama at `http://localhost:11434/v1`; no API key is needed.
-Environment variables are listed in `.env.example`. Copy it to the root `.env`
-for automatic loading, or export variables in the terminal to override it. To use OpenAI,
-set `LLM_PROVIDER=openai`, `LLM_MODEL` to an available model, and `OPENAI_API_KEY`.
-The native OpenAI path was verified with `gpt-5.4-nano`; its ten-case reference
-passes 10/10. Live provider inference through Docker has not been verified.
+## Stage 2 — deterministic retrieval and refund rules (22 November)
 
-The CLI prints answers to stdout and optional timing/tool diagnostics to stderr.
-It exits nonzero for execution/configuration errors or unverified answers. Evaluation
-exits 1 if any case fails; this is expected for the committed real-model results.
+**Decision:** use `list_policy_topics()` and `search_policies(policy, topics)` rather
+than vector search. The catalogue exposes three file IDs and exact `##` headings.
+Retrieval returns selected sections with original Markdown, introduction, and source.
 
-## Model and framework
+**Reason:** three small documents already have a useful taxonomy. Exact lookup is
+predictable, explainable, and testable. Embeddings, chunking, similarity thresholds,
+and vector storage would add uncertainty and operational work. The tradeoff is
+that the model must select the right file and topic: valid selections can still
+be irrelevant. A larger corpus could justify revisiting this decision.
 
-The evaluated model is local Ollama `llama3.1:8b`. It was already installed, supports
-native tool calls, and makes the solution runnable without paid API credentials.
-The locked Pydantic AI version is 2.71.0. It supplies structured outputs, tool
-argument validation, retry handling, usage accounting, and model-provider adapters.
-Python application code supplies routing checks, execution limits, evidence
-validation, and answer formatting. No vector database, HTTP server, or external
-observability service is required.
+**Decision:** calculate refunds in Python using Decimal, stored booking prices,
+and the fixed clock **2026-06-10 09:00 Europe/Warsaw (UTC+02:00)**. Compare elapsed
+time in UTC; the LLM performs no monetary arithmetic.
 
-## Architecture
+**Reason:** amounts and time boundaries must be reproducible and independently tested.
+
+| Condition | Rental refund | Deposit | Booking fee |
+| --- | --- | --- | --- |
+| Confirmed; at least 48 hours before start | 100% | Returned | Retained |
+| Confirmed; at least 24 but less than 48 hours | 50% | Returned | Retained |
+| Confirmed; less than 24 hours | 0% | Returned | Retained |
+| Any other status | No new cancellation refund | No new cancellation refund | No new cancellation refund |
+
+Confirmed records whose start has passed use the zero-rental-refund tier; the
+tool does not infer a status transition. Voucher rental refunds remain vouchers,
+not cash. The deposit's separate payment method is unknown, so responses mention
+only its original method. Storm exceptions and damage/theft decisions require
+staff. No tool changes bookings or moves money. Policy rounding for hypothetical
+half-cent refunds is unspecified and remains a limitation.
+
+**Evidence:** tests cover 24/48-hour boundaries and one second below them, statuses,
+vouchers, timestamps, source errors, and unknown bookings. CW-1002 returns 340 EUR:
+40 EUR rental plus 300 EUR deposit, with the booking fee retained.
+
+## Stage 3 — Ollama baseline and prompt experiments (22 November)
+
+**Decision:** use Pydantic AI and one active provider per run. Begin with local
+Ollama `llama3.1:8b`, already installed, while retaining an OpenAI adapter.
+Tool wrappers expose business arguments only; Python injects dependencies.
+There is no automatic local-to-cloud fallback.
+
+**Reason:** Pydantic AI supplies typed output, validation, usage accounting, and
+provider adapters. Local inference offers a credential-free setup. Explicit
+provider choice avoids silently forwarding local questions to a cloud service.
+
+**Observed problem:** correct tools and fluent output did not ensure correct
+orchestration. The single-agent baseline passed **4/10**. A longer prompt with
+workflows and examples also passed **4/10**, and **1/5** additional cases. Some runs
+stopped after catalogue discovery or answered without retrieving the source.
+Longer instructions alone were not demonstrated to improve the solution.
+
+**Evidence:** [baseline](eval/baseline/results.md),
+[longer prompt](eval/long_prompt/results.md), and
+[additional cases](eval/long_prompt/holdout/results.md). These are historical
+experiments, not current-application results.
+
+## Stage 4 — manager and narrow specialists (22 November)
+
+**Decision:** replace the broad single-agent loop with explicit sequential stages:
 
 ```text
-Customer question
-  -> manager: typed scope and plan
-  -> Python: validate selected IDs and tasks
-  -> narrow specialists: execute their permitted tools
-  -> Python: validate actual evidence
-  -> manager: select policy excerpts
-  -> Python: render verified excerpts and structured booking/refund results
+Question
+  -> manager: classify scope and select policy/booking/refund tasks
+  -> Python: validate plan and discover required policy topics
+  -> narrow specialists: choose arguments and execute their permitted tool
+  -> Python: validate returned evidence
+  -> manager: select exact policy quotations
+  -> Python: render verified quotations and booking/refund facts
 ```
 
-1. The manager returns scope plus flat `policies`, `bookings`, and `refunds` lists.
-   Plans allow at most four distinct tasks. Booking-ID enums are generated from
-   IDs present in the question; policy IDs are restricted to the three supplied files.
-   Native output explicitly uses strict mode; invalid plans get one validation retry.
-2. Each specialist uses the same model with a fresh, small context and one allowed
-   native tool. Its successful output is a Python tool result, not generated prose.
-   Pydantic AI output functions enforce this handoff; invalid arguments may retry
-   once. The policy specialist receives exact topic enums after Python executes
-   catalogue discovery. Successful results return to the manager workflow; policy
-   evidence is subsequently provided to the model for extractive synthesis.
-3. Python checks result types and source availability. A policy summary may contain
-   only citations and verbatim quotes present in retrieved text; every requested
-   policy source must be cited. There is no unrestricted policy-answer field.
-4. Booking facts and refund amounts are rendered directly from typed results.
-   Policy excerpts are rendered with their source filename, topics, and document
-   introduction. A narrowly supported electric-bike age refusal can precede the
-   source quote; its age threshold comes from the quote. Unsupported questions
-   receive a fixed refusal and staff contact.
+**Reason:** each specialist receives a smaller context and one relevant tool.
+Successful specialist output is an executed Python tool result, rather than a
+generated claim that execution occurred. Python forces catalogue discovery before
+policy lookup. All stages use the same selected model, with separate contexts;
+this is not recursive delegation or a collection of different model weights.
 
-These are separate contexts and sequential calls, not recursive delegation.
-Short role instructions live in `app/prompts.py`; routing/assembly is in
-`app/agent.py`, specialist tool interfaces in `app/specialists.py`, and per-question
-state/audit events in `app/context.py`.
+**Refinement:** simplify the initial nested plan to flat `policies`, `bookings`,
+and `refunds` arrays, with at most four distinct tasks. Restrict booking-ID enums
+to IDs present in the question and policy/topic enums to real documents.
+These constraints prevent invented identifiers but do not establish relevance.
 
-All stages share a request/tool budget and deadline. CLI defaults: six model
-requests, eight business-tool executions, 180 seconds. Evaluation: five requests,
-four tool executions, 120-second deadline, and a separate 60-second performance
-target. Replies are capped at 1024 tokens. Provider transport retries are disabled.
-Repeated identical business-tool executions are blocked. Invalid plans, exhausted
-budgets, missing data, or unsupported evidence produce a staff-contact fallback
-and an explicit error state; unchecked partial answers are not emitted.
+**Evidence:** early workflows passed [3/10](eval/workflow_v1/results.md) and
+[6/10](eval/workflow_v2/results.md). Historical v0.1.0 reached
+[8/10](eval/reference/ollama-llama3.1-8b/results.md), with
+[3/5 additional cases](eval/holdout/results.md). The extra stages have a cost:
+17 model requests across the original baseline versus 30 in v0.1.0. One run per
+version does not establish statistical improvement or isolate every design change.
 
-## Tools and data decisions
+## Stage 5 — grounded rendering and bounded execution (22 November)
 
-| Tool | Implementation and reason |
+**Decision:** remove unrestricted policy paraphrases. The synthesizer returns only
+`source_id` and exact quotations. Python verifies source membership and coverage,
+then renders the quotes. Booking facts and refund amounts come directly from typed
+tool results.
+
+**Trigger and reason:** an earlier generated answer said the shop was closed while
+quoting evidence saying it was open. Checking citations and numbers did not verify
+that paraphrase. Extractive output reduces this failure mode, at the cost of less
+conversational answers. Source membership still does not prove relevance or that
+every necessary condition was included.
+
+**Decision:** share one request/tool budget and deadline across stages, block
+identical repeated business-tool calls, cap each response at 1024 tokens, and
+disable provider transport retries. Tool-argument validation may retry once.
+
+**Reason:** smaller contexts must not create an unbounded sequence of calls.
+CLI defaults are six model requests, eight business-tool executions, and 180 seconds.
+Evaluation uses five requests, four tool executions, a 120-second deadline, and a
+separate 60-second performance target. Phase timings, raw responses, tools, results,
+tokens, and failures explain where time went. Errors return a fallback instead of
+unchecked partial answers.
+
+## Stage 6 — OpenAI validation and targeted corrections (22 November)
+
+**Decision:** evaluate OpenAI `gpt-5.4-nano` with the shared workflow and checks,
+without changing the business tools for that provider.
+
+**Trigger:** an initial OpenAI run failed `age_limit` during routing. It returned
+`policies: ["ages", "helmets"]` rather than a file ID such as `faq`. Validation
+rejected this before any tools ran. Routing had zero retries, and defaulted fields
+made the schema incompatible with automatic OpenAI strict mode.
+
+**Change and reason:** explicitly request `NativeOutput(..., strict=True)` for
+routing, clarify file IDs versus specialist-selected topics, and permit one
+validation retry within the existing budget. An injected HTTP transport test checks
+the actual OpenAI strict-schema request. Fake-model tests verify recovery, retry
+exhaustion, and shared limits. The input constraints remain provider-neutral.
+
+**Related decisions:**
+
+- Add staff contact when a selected quotation calls for staff involvement rather
+  than on every policy response. Unused staff-related retrieved sections must not
+  escalate an otherwise complete answer. This uses a limited phrase matcher.
+- Preserve the explicit-refusal evaluation requirement for the 14-year-old question.
+  A small Python renderer derives a negative electric-bike age conclusion from one
+  unambiguous age and a minimum in selected quotations. It preserves source text,
+  invents no threshold, and does not infer eligibility. Other phrasings receive
+  policy quotations; this is deliberately limited language handling.
+- Use Pydantic Settings for root `.env` loading, environment overrides, and
+  `SecretStr` credentials. Pass dotenv-loaded keys explicitly to the provider:
+  loading a file does not export its key into the SDK's process environment.
+  Inject configuration sources in tests instead of monkeypatching globals.
+
+**Evidence:** the targeted age case passed in 4.938 seconds, followed by the full
+OpenAI run below. The current offline suite passes **151 tests**, with no skips,
+including schema, configuration, retry, and age-conclusion regressions.
+
+## Stage 7 — both models on matching code (22 November)
+
+The current saved runs share application fingerprints, ten questions, checker,
+limits, fixed business time, temperature, response cap, architecture, and Pydantic
+AI version (2.71.0). **26/26 comparison checks passed.**
+
+| Metric | OpenAI `gpt-5.4-nano` | Ollama `llama3.1:8b` |
+| --- | ---: | ---: |
+| Overall pass | **10/10** | **7/10** |
+| Answer checks | 10/10 | 10/10 |
+| Tool checks | 10/10 | 7/10 |
+| Runtime checks | 10/10 | 10/10 |
+| Median seconds | 2.320 | 19.084 |
+| Maximum seconds | 4.391 | 49.842 |
+| Total case seconds | 25.230 | 205.858 |
+| Model requests | 21 | 29 |
+| Business-tool executions | 11 | 19 |
+| Reported total tokens | 8688 | 10902 |
+
+Ollama's failures include correct required facts alongside unnecessary policy text:
+
+| Case | Observed failure |
 | --- | --- |
-| `list_policy_topics` | Generate available policy IDs and exact `##` headings from the documents. |
-| `search_policies` | Retrieve exact selected sections, including tables/lists, introduction, and sources. Strict lookup is predictable for three small files. |
-| `get_booking` | Validate JSON into `BookingRead`; return a booking or structured `not_found`. No shared mutable cache. |
-| `calculate_refund` | Use Python `Decimal`, stored booking prices, booking status, and timezone-aware elapsed time. The LLM does no monetary arithmetic. |
+| `half_refund` | Correct 340 EUR total, plus unrelated accident/theft quotations. |
+| `already_cancelled` | Correct refusal of another refund, plus unrelated FAQ text and an unnecessary booking-details lookup. The recorded checker failure is the FAQ selection. |
+| `unknown_booking` | Correct not-found result, plus the entire FAQ retrieval and an irrelevant opening-hours quotation. |
 
-Loaders and cancellation time are injected explicitly, including in unit tests.
-The fixed assignment time is **2026-06-10 09:00 Europe/Warsaw (UTC+02:00)**.
-Rental refunds are 100% at >=48 hours, 50% at >=24 and <48 hours, and zero below
-24 hours. Confirmed cancellations return the full deposit; booking fees are retained.
-Other statuses cannot be cancelled and receive no new cancellation refund.
-A confirmed record whose start has passed uses the zero-rental-refund tier; the
-tool does not invent a status transition. No booking is changed and no money is sent.
+**Decision:** retain the shared implementation and both providers; use OpenAI as
+the stronger observed reference. Preserve Ollama failures instead of weakening the
+checks or altering a working OpenAI workflow solely for this local model. Ollama
+remains the default for credential-free local setup; default configuration and
+observed quality are separate choices.
 
-Voucher rental refunds are new vouchers, not cash. The deposit follows its original
-payment method, which the data does not separately identify. Storm exceptions and
-damage/theft decisions require staff. No automatic exception is approved.
+One run per model is not a reliability guarantee. Hardware versus hosted service,
+network, load, caching, and token accounting differ. Cost was not measured. The five
+additional cases have historical results only; they are now development data,
+not an unseen benchmark. No broad model ranking or monetary-cost claim is supported.
 
-## Tests, evaluation, and version binding
+### Evidence and source binding
 
-The current offline suite has **151 passing tests**, with no skips. It covers all tools,
-refund rules and boundaries, source failures, model-free workflow tests using
-`FunctionModel`, argument/source guards, shared budgets/timeouts, and the evaluator
-itself. Tests inject fake data and need no Ollama service or API key.
+- [OpenAI report](eval/reference/openai-gpt-5.4-nano/results.md) and
+  [JSON](eval/reference/openai-gpt-5.4-nano/results.json).
+- [Current Ollama report](eval/reference/ollama-llama3.1-8b-current/results.md)
+  and [JSON](eval/reference/ollama-llama3.1-8b-current/results.json).
+- [Comparison checks](eval/reference/comparison-checks.json) and
+  [manifest](eval/reference/manifest.json), including report checksums and an
+  LF-normalized binding to the published application files.
+- [Ten questions](eval/cases.json), [extra questions](eval/holdout_cases.json),
+  and [grading code](eval/checks.py).
 
-Current OpenAI and Ollama results use matching application code and are compared
-in [eval/reference/README.md](eval/reference/README.md): 10/10 and 7/10 respectively.
-The historical real-model reports below belong to the application source packaged as
-v0.1.0. [eval/RELEASE.md](eval/RELEASE.md) and [eval/release.json](eval/release.json)
-link recorded run fingerprints to this version. Original run metadata is preserved:
-the runs were recorded from an uncommitted working tree based on an earlier Git
-commit. That base commit is not falsely presented as the evaluated final source.
-Canonical per-file hashes handle Git's line-ending normalization across checkouts.
-[docs/VERIFICATION.md](docs/VERIFICATION.md) records the separate fresh-clone check.
+Original metadata is preserved: current runs used an uncommitted tree based on an
+earlier Git commit. The base commit alone is not evaluated-source identification;
+application fingerprints provide that binding. Original reference bytes survive
+Git line-ending conversion. `eval/results.*` may hold a later run, so fixed
+references should be used for comparison. The historical [release manifest](eval/release.json)
+refers to paths in the immutable v0.1.0 tag. Its 118-test verification and 8/10
+score must not be presented as current results.
 
-| Validation | Result | Evidence |
-| --- | --- | --- |
-| Historical v0.1.0 ten real questions | **8/10** overall | [Report](eval/reference/ollama-llama3.1-8b/results.md), [JSON](eval/reference/ollama-llama3.1-8b/results.json), [cases](eval/cases.json) |
-| Answer / tool / runtime checks | **9/10 / 9/10 / 10/10** | Same report, with full answers and traces |
-| Five additional development cases | **3/5** | [Report](eval/holdout/results.md), [cases](eval/holdout_cases.json) |
-| Original single-agent baseline | **4/10** | [Before/after comparison](eval/comparison.md) |
+Grading checks required answer patterns, tool choices/arguments/results, rejected
+attempts, repeats, budgets, and latency. It does not prove semantic correctness.
+Ollama's irrelevant but source-backed text demonstrates why full traces matter
+even when all answer-pattern checks pass.
 
-Median latency for the final ten-case run was **16.749 seconds**, maximum **31.071
-seconds**. Model requests increased from 17 to 30 compared with the archived
-baseline. These are single observed runs with cache/startup effects, not controlled
-performance claims. All rejected model attempts, actual tool arguments/results,
-stage timings, and guard failures are available in the reports.
+## Stage 8 — packaging and review handoff (22–23 November)
 
-The remaining failures are kept in the score:
+**Decision:** supply pinned Python 3.14.0/uv 0.9.7 images, locked dependencies, a
+non-root CLI image, a separate offline-test target, and Compose configurations for
+OpenAI or internal CPU-only Ollama with persistent model storage. No HTTP server
+or published app port is added.
 
-- The age-limit response quotes the correct minimum age of 16 but lacks the
-  explicit negative wording required by the checker for a 14-year-old.
-- Unknown-booking responses are correct but sometimes trigger unnecessary policy
-  lookups. The fabrication-instruction case also took 60.060 seconds, just above
-  our 60-second target while below the enforced 120-second deadline.
-- The cash-deposit response quotes "cash, but not the deposit", but misses the
-  checker's requested alternative-payment wording and performs an extra lookup.
+**Reason:** reviewers can run without host Python while keeping credentials in
+runtime settings. A separate test image keeps pytest out of production. Images
+omit Git history, so packaged evaluations explicitly record unavailable Git
+metadata instead of inventing a commit. Installation commands belong in README.
 
-Run metadata, grading rules, limitations, comparison commands, and historical
-experiments are explained in [eval/README.md](eval/README.md). Local reruns should
-use `--output` so the committed baseline is preserved. Regex checks are useful but
-can reject valid wording or miss semantic mistakes; full answers still need review.
-The additional five cases are now development data, not an unseen benchmark.
+**Verified:** native and Docker suites both pass **151 tests**. Compose validation,
+image builds, CLI help, and optional Ollama server health were checked. Container
+inference was not verified; no model was downloaded into that server during
+implementation. Current model reports measure native OpenAI and host Ollama.
+Historical v0.1.0 had a separate clone/new-environment check recorded in its release
+manifest; this is not a fresh-machine verification of current main.
 
-## AI-assistant usage and corrections
+**Documentation decision:** README covers setup and project assumptions; SOLUTION
+covers decision stages, rationale, and evidence. Generated reports and JSON
+manifests remain evaluation artifacts; policy Markdown remains input data. Separate
+installation, Docker, evaluation-guide, and history documents are removed to avoid
+duplicated, contradictory claims.
 
-Codex helped inspect the task data, discuss designs, scaffold the repository,
-implement and review tools/agents/tests, run evaluations, and write documentation.
-The user chose the CLI focus, pytest, dependency injection, strict policy retrieval,
-and manager/specialist architecture; generated changes were checked through tests
-and real local-model runs.
+## AI assistance and remaining limits
 
-A concrete assistant mistake was accepting a generated policy answer when its
-quotes and numbers matched evidence. A real run retrieved the correct hours but
-said the shop was closed while quoting text saying it was open. The provenance
-check did not validate that paraphrase. We removed the free answer field and now
-render only validated excerpts. Earlier test scaffolding also used `unittest` and
-was corrected to pytest at the user's request. No example or evaluation score was
-invented to claim success.
+Codex assisted with discussion, scaffolding, implementation, review, tests,
+evaluations, and documentation. The developer selected CLI scope, pytest,
+dependency injection, strict section retrieval, and the specialist workflow.
+Generated changes were checked with tests and real runs. Earlier unittest
+scaffolding was corrected to pytest; a policy-paraphrase contradiction drove the
+extractive-rendering decision.
 
-## Limitations and next steps
+The model can still misclassify scope, select unnecessary valid tasks/topics,
+or omit conditions. Exact quotes do not establish relevance. Extractive output and
+the narrow age renderer are less flexible than conversation. There is no memory,
+customer authentication, real booking mutation, payment integration, or production
+API. Two unrelated prompts do not constitute a comprehensive safety evaluation;
+other models/platforms are not validated.
 
-- The model can still misclassify scope, select unnecessary valid tasks/topics,
-  or choose incomplete excerpts. Source membership does not prove relevance or
-  that every condition has been included.
-- Extractive answers are less conversational. Improving paraphrases requires
-  stronger semantic checking, not just longer instructions.
-- Model weights/Ollama behavior can change; use the recorded model/settings and
-  locked dependencies, but do not expect identical wording or timings.
-- OpenAI live execution, other models/operating systems, and broad adversarial
-  coverage have not been validated. Fresh validation reuses the existing Ollama
-  service and package cache; it is not a brand-new-machine benchmark.
-- No conversation memory, production booking authentication, real cancellation,
-  payment integration, or network API is implemented. This is a demo over supplied data.
-- The policy does not specify rounding for hypothetical half-cent refunds.
-
-With more time: improve minimal routing/evidence selection, add fresh paraphrases
-and adversarial cases, compare a smaller tool-capable model under the same checks,
-and add CLI/configuration tests and CI. Keep evaluations honest rather than tuning
-the checker solely to obtain a perfect score.
+Next work should use fresh paraphrases and adversarial cases, repeated model
+runs, and explicit provider-specific experiments that preserve the OpenAI reference
+and shared regressions. Vector retrieval or unrestricted synthesis should require
+evidence that their added complexity improves task results.
